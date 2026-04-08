@@ -46,8 +46,7 @@ public class SchedulerService : BackgroundService
 
     private async Task TryRunDigestAsync(CancellationToken ct)
     {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync(ct);
+        await using var conn = await _db.GetOpenConnectionAsync(ct);
 
         var lockResult = await conn.ExecuteScalarAsync<int>(
             "SELECT GET_LOCK('daily_news_scheduler', 0)");

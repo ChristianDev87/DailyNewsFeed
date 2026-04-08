@@ -97,8 +97,7 @@ public class BotService : BackgroundService, IBotClientProvider
     private async Task OnLeftGuildAsync(SocketGuild guild)
     {
         _logger.LogInformation("Guild verlassen: {GuildName} ({GuildId})", guild.Name, guild.Id);
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync();
+        await using var conn = await _db.GetOpenConnectionAsync();
         await conn.ExecuteAsync(
             "UPDATE channels SET active = 0 WHERE guild_id = @guildId",
             new { guildId = guild.Id.ToString() });
@@ -111,8 +110,7 @@ public class BotService : BackgroundService, IBotClientProvider
     {
         try
         {
-            using var conn = _db.GetConnection();
-            await conn.OpenAsync();
+            await using var conn = await _db.GetOpenConnectionAsync();
             await conn.ExecuteAsync(@"
                 INSERT INTO known_guilds (guild_id, guild_name, active, joined_at, updated_at)
                 VALUES (@guildId, @guildName, 1, NOW(), NOW())
@@ -181,8 +179,7 @@ public class BotService : BackgroundService, IBotClientProvider
     {
         try
         {
-            using var conn = _db.GetConnection();
-            await conn.OpenAsync();
+            await using var conn = await _db.GetOpenConnectionAsync();
 
             var channels = (await conn.QueryAsync<Models.Channel>(
                 "SELECT * FROM channels WHERE custom_bot_token_encrypted IS NOT NULL AND active = 1"))
