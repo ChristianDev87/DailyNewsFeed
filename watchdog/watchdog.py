@@ -69,11 +69,12 @@ PROJ = os.environ.get('PROJECT_DIR', '/opt/daily-news')
 # Bekannte Befehle und ihr Timeout in Sekunden
 # Deploy-Befehle brauchen deutlich länger (git pull + docker build)
 COMMANDS: dict[str, tuple[list[str], int]] = {
-    'restart_bot':      (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'restart', 'bot'],   30),
-    'restart_watchdog': (['systemctl', 'restart', 'daily-news-watchdog'],                               30),
-    'deploy_bot':       (['bash', f'{PROJ}/deploy-bot.sh'],                                            600),
-    'deploy_frontend':  (['bash', f'{PROJ}/deploy-frontend.sh'],                                       600),
-    'deploy_watchdog':  (['bash', f'{PROJ}/deploy-watchdog.sh'],                                       300),
+    'stop_bot':         (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'stop', 'bot'],     30),
+    'restart_bot':      (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'restart', 'bot'],  30),
+    'restart_watchdog': (['systemctl', 'restart', 'daily-news-watchdog'],                              30),
+    'deploy_bot':       (['bash', f'{PROJ}/deploy-bot.sh'],                                           600),
+    'deploy_frontend':  (['bash', f'{PROJ}/deploy-frontend.sh'],                                      600),
+    'deploy_watchdog':  (['bash', f'{PROJ}/deploy-watchdog.sh'],                                      300),
 }
 
 POLL_INTERVAL = int(os.environ.get('WATCHDOG_INTERVAL', '10'))
