@@ -3,6 +3,7 @@ UEBERARBEITUNG.md
 deploy-bot.sh
 deploy-frontend.sh
 deploy-watchdog.sh
+TempBotToken.txt
 
 # Secrets
 .env
