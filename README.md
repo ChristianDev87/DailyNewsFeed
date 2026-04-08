@@ -69,7 +69,7 @@ DB_HOST=db               # Docker-interner Hostname
 DB_PORT=3306
 DB_ROOT_PASS=sicheres-passwort
 WATCHDOG_DB_HOST=127.0.0.1   # Watchdog läuft auf dem Host
-WATCHDOG_DB_PORT=3306
+WATCHDOG_DB_PORT=3307        # Container ist auf Host-Port 3307 erreichbar
 ```
 
 ### 4. Log-Verzeichnisse anlegen
@@ -143,7 +143,7 @@ Alle Variablen in `.env` (Vorlage: `.env.example`):
 | `DB_PASS` | ✅ | Datenbankpasswort |
 | `DB_ROOT_PASS` | Option B | Root-Passwort für den MariaDB-Container |
 | `WATCHDOG_DB_HOST` | Option B | DB-Host für den Watchdog (`127.0.0.1`) — überschreibt `DB_HOST` |
-| `WATCHDOG_DB_PORT` | Option B | DB-Port für den Watchdog — überschreibt `DB_PORT` |
+| `WATCHDOG_DB_PORT` | Option B | `3307` — Container ist auf Host-Port 3307 erreichbar (kein Konflikt mit vorhandenem MySQL) |
 | `DISCORD_TOKEN` | ✅ | Bot-Token aus dem Discord Developer Portal |
 | `TOKEN_ENCRYPTION_KEY` | ✅ | AES-256 Schlüssel (min. 32 Zeichen) — für Custom Bot Tokens |
 | `DISCORD_CLIENT_ID` | ✅ | OAuth2 Client ID (Frontend-Login) |
