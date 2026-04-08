@@ -34,7 +34,7 @@ class AdminAction
         $page        = min($page, max(1, $totalPages));
 
         $commands = $this->db->fetchAll(
-            "SELECT * FROM bot_commands ORDER BY created_at DESC LIMIT {$perPage} OFFSET {$offset}"
+            "SELECT * FROM bot_commands ORDER BY id DESC LIMIT {$perPage} OFFSET {$offset}"
         );
 
         $stats = $this->db->fetchOne(
