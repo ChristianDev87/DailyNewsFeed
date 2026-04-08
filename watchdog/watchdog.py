@@ -146,7 +146,7 @@ def process_pending(conn: mysql.connector.MySQLConnection) -> None:
                 )
         except subprocess.TimeoutExpired:
             status = 'failed'
-            log.error(f"'{command}' Timeout nach 30s (id={cmd_id})")
+            log.error(f"'{command}' Timeout nach {timeout}s (id={cmd_id})")
         except Exception as exc:
             status = 'failed'
             log.error(f"'{command}' Ausnahme: {exc} (id={cmd_id})")

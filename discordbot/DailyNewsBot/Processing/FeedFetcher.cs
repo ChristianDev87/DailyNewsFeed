@@ -118,10 +118,11 @@ public class FeedFetcher
             return false;
         }
         var b = addr.GetAddressBytes();
-        return b[0] == 127
-            || b[0] == 10
-            || (b[0] == 172 && b[1] is >= 16 and <= 31)
-            || (b[0] == 192 && b[1] == 168)
-            || (b[0] == 169 && b[1] == 254);
+        return b[0] == 0                                       // 0.0.0.0/8 unspecified
+            || b[0] == 127                                     // 127.0.0.0/8 loopback
+            || b[0] == 10                                      // 10.0.0.0/8 private A
+            || (b[0] == 172 && b[1] is >= 16 and <= 31)        // 172.16.0.0/12 private B
+            || (b[0] == 192 && b[1] == 168)                    // 192.168.0.0/16 private C
+            || (b[0] == 169 && b[1] == 254);                   // 169.254.0.0/16 link-local
     }
 }
