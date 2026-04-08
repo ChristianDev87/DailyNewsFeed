@@ -20,8 +20,7 @@ public class HeartbeatService : BackgroundService
         {
             try
             {
-                using var conn = _db.GetConnection();
-                await conn.OpenAsync(stoppingToken);
+                await using var conn = await _db.GetOpenConnectionAsync(stoppingToken);
                 await conn.ExecuteAsync(
                     "INSERT INTO bot_status (id, last_seen, status) VALUES (1, UTC_TIMESTAMP(), 'online') " +
                     "ON DUPLICATE KEY UPDATE last_seen = UTC_TIMESTAMP(), status = 'online'");
@@ -39,8 +38,7 @@ public class HeartbeatService : BackgroundService
     {
         try
         {
-            using var conn = _db.GetConnection();
-            await conn.OpenAsync(cancellationToken);
+            await using var conn = await _db.GetOpenConnectionAsync(cancellationToken);
             await conn.ExecuteAsync(
                 "UPDATE bot_status SET status = 'offline' WHERE id = 1");
             _logger.LogInformation("Bot-Status auf offline gesetzt");
