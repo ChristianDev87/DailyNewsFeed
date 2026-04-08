@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- -----------------------------------------------------------------------------
 -- bot_commands
 -- Kommunikationsbrücke: PHP schreibt Befehle, Watchdog liest und führt aus.
--- Erlaubte Werte für command: 'restart_bot', 'restart_watchdog'
+-- Erlaubte Werte für command: 'restart_bot', 'restart_watchdog', 'deploy_bot', 'deploy_frontend', 'deploy_watchdog'
 -- Erlaubte Werte für status:  'pending', 'done', 'failed'
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS bot_commands (
