@@ -16,7 +16,6 @@ while (searchDir != null)
 }
 if (envPath != null)
     Env.Load(envPath);
-// Kein .env gefunden — Umgebungsvariablen müssen direkt gesetzt sein
 
 const string consoleTemplate =
     "{Timestamp:HH:mm:ss} [{Level:u3}] {SourceContext:l}: {Message:lj}{NewLine}{Exception}";
@@ -35,52 +34,60 @@ try
 {
     Log.Information("Daily News Bot startet...");
 
-    var host = Host.CreateDefaultBuilder(args)
-        .UseSerilog((ctx, services, cfg) => cfg
-            .ReadFrom.Configuration(ctx.Configuration)
-            .MinimumLevel.Override("Discord", Serilog.Events.LogEventLevel.Warning)
-            .WriteTo.Console(outputTemplate: consoleTemplate)
-            .WriteTo.File(new CompactJsonFormatter(), "logs/bot-.log",
-                rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: 14))
-        .ConfigureAppConfiguration(cfg =>
-        {
-            cfg.AddEnvironmentVariables();
-            cfg.AddJsonFile("appsettings.json", optional: true);
-        })
-        .ConfigureServices((ctx, services) =>
-        {
-            // Core Services
-            services.AddSingleton<Database>();
-            services.AddHttpClient("feeds", client =>
-            {
-                client.Timeout = TimeSpan.FromSeconds(15);
-                client.DefaultRequestHeaders.Add(
-                    "User-Agent",
-                    "DailyNewsBot/1.0 (+https://github.com/ChristianDev87/DailyNewsFeed-Bot; RSS reader)");
-                client.DefaultRequestHeaders.Add(
-                    "Accept",
-                    "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5");
-                client.DefaultRequestHeaders.Add(
-                    "Accept-Language",
-                    "de, en;q=0.9");
-            }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-            {
-                AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
-            });
-            services.AddSingleton<FeedFetcher>();
-            services.AddSingleton<DigestService>();
+    var builder = WebApplication.CreateBuilder(args);
+    builder.WebHost.UseUrls("http://+:8080");
 
-            // Bot + Scheduler
-            services.AddSingleton<BotService>();
-            services.AddHostedService(sp => sp.GetRequiredService<BotService>());
-            services.AddSingleton<IBotClientProvider>(sp => sp.GetRequiredService<BotService>());
-            services.AddHostedService<SchedulerService>();
-            services.AddHostedService<HeartbeatService>();
-        })
-        .Build();
+    builder.Host.UseSerilog((ctx, services, cfg) => cfg
+        .ReadFrom.Configuration(ctx.Configuration)
+        .MinimumLevel.Override("Discord", Serilog.Events.LogEventLevel.Warning)
+        .WriteTo.Console(outputTemplate: consoleTemplate)
+        .WriteTo.File(new CompactJsonFormatter(), "logs/bot-.log",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 14));
 
-    await host.RunAsync();
+    builder.Services.AddSingleton<Database>();
+    builder.Services.AddHttpClient("feeds", client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(15);
+        client.DefaultRequestHeaders.Add(
+            "User-Agent",
+            "DailyNewsBot/1.0 (+https://github.com/ChristianDev87/DailyNewsFeed-Bot; RSS reader)");
+        client.DefaultRequestHeaders.Add(
+            "Accept",
+            "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5");
+        client.DefaultRequestHeaders.Add(
+            "Accept-Language",
+            "de, en;q=0.9");
+    }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
+    });
+    builder.Services.AddSingleton<FeedFetcher>();
+    builder.Services.AddSingleton<DigestService>();
+
+    builder.Services.AddSingleton<BotService>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<BotService>());
+    builder.Services.AddSingleton<IBotClientProvider>(sp => sp.GetRequiredService<BotService>());
+    builder.Services.AddHostedService<SchedulerService>();
+    builder.Services.AddHostedService<HeartbeatService>();
+
+    var app = builder.Build();
+
+    app.MapPost("/internal/run-digest", async (DigestService digestService, IBotClientProvider clientProvider) =>
+    {
+        try
+        {
+            await digestService.RunAllChannelsAsync(clientProvider, CancellationToken.None);
+            return Results.Ok();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Fehler im /internal/run-digest Endpunkt");
+            return Results.StatusCode(500);
+        }
+    });
+
+    await app.RunAsync();
 }
 catch (Exception ex)
 {
