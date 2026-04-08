@@ -78,12 +78,13 @@ COMMANDS: dict[str, tuple[list[str], int]] = {
 }
 
 POLL_INTERVAL = int(os.environ.get('WATCHDOG_INTERVAL', '10'))
+BOT_BASE_URL = os.environ.get('WATCHDOG_BOT_URL', 'http://localhost:8082')
 
 
 def get_connection() -> mysql.connector.MySQLConnection:
     # WATCHDOG_DB_HOST/PORT überschreiben DB_HOST/PORT — nötig wenn DB im Docker läuft
     # (Watchdog ist auf dem Host und kann den Docker-internen Hostnamen 'db' nicht auflösen)
-    return mysql.connector.connect(
+    conn = mysql.connector.connect(
         host=os.environ.get('WATCHDOG_DB_HOST', os.environ.get('DB_HOST', 'localhost')),
         port=int(os.environ.get('WATCHDOG_DB_PORT', os.environ.get('DB_PORT', '3306'))),
         database=os.environ.get('DB_NAME', 'daily_news'),
@@ -91,6 +92,10 @@ def get_connection() -> mysql.connector.MySQLConnection:
         password=os.environ['DB_PASS'],
         connection_timeout=10,
     )
+    cursor = conn.cursor()
+    cursor.execute("SET time_zone = '+00:00'")
+    cursor.close()
+    return conn
 
 
 def _mark_bot_offline(conn: mysql.connector.MySQLConnection) -> None:
@@ -122,7 +127,7 @@ def process_pending(conn: mysql.connector.MySQLConnection) -> None:
         if command == 'run_digest':
             if created_by == 'scheduler':
                 continue
-            url = f'http://localhost:8082/internal/run-digest?cmdId={cmd_id}'
+            url = f'{BOT_BASE_URL}/internal/run-digest?cmdId={cmd_id}'
             fire_args = ['curl', '--fail', '--silent', '--show-error',
                          '--max-time', '30', '-X', 'POST', url]
             log.info(f"'run_digest' auslösen (id={cmd_id})")
@@ -130,10 +135,13 @@ def process_pending(conn: mysql.connector.MySQLConnection) -> None:
                 result = subprocess.run(
                     fire_args, capture_output=True, text=True, timeout=35)
                 if result.returncode == 0:
+                    cursor.execute(
+                        "UPDATE bot_commands SET status='in_progress' WHERE id=%s",
+                        (cmd_id,))
+                    conn.commit()
                     log.info(
                         f"'run_digest' ausgelöst (id={cmd_id}) "
                         f"— Bot übernimmt Status-Update")
-                    # Kein DB-Update hier — Bot markiert done/failed wenn fertig
                 else:
                     log.error(
                         f"'run_digest' fehlgeschlagen (Bot nicht erreichbar, "
