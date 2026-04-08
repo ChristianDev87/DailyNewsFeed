@@ -7,6 +7,9 @@ namespace DailyNewsBot.Commands;
 
 public static class DNewsCommands
 {
+    private static readonly TimeZoneInfo _tz =
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+
     public static async Task HandleAsync(
         SocketSlashCommand cmd,
         IBotClientProvider clientProvider,
@@ -127,6 +130,12 @@ public static class DNewsCommands
 
         await cmd.DeferAsync();
 
+        var cmdId = await conn.ExecuteScalarAsync<long>(
+            "INSERT INTO bot_commands (command, status, created_by, created_at) " +
+            "VALUES ('run_digest', 'pending', @createdBy, NOW()); SELECT LAST_INSERT_ID()",
+            new { createdBy = $"discord:{cmd.User.Id}" });
+
+        var status = "done";
         try
         {
             await digestService.RunSingleChannelAsync(channelId, clientProvider, CancellationToken.None);
@@ -134,7 +143,14 @@ public static class DNewsCommands
         }
         catch (Exception ex)
         {
+            status = "failed";
             await cmd.FollowupAsync($"❌ Fehler beim Senden: {ex.Message}");
+        }
+        finally
+        {
+            await conn.ExecuteAsync(
+                "UPDATE bot_commands SET status = @status, executed_at = NOW() WHERE id = @cmdId",
+                new { status, cmdId });
         }
     }
 
@@ -146,9 +162,9 @@ public static class DNewsCommands
         using var conn = db.GetConnection();
         await conn.OpenAsync();
 
-        var lastRun = await conn.ExecuteScalarAsync<DateTime?>(
-            "SELECT MAX(seen_at) FROM seen_articles WHERE channel_id = @channelId",
-            new { channelId });
+        var lastRunUtc = await conn.ExecuteScalarAsync<DateTime?>(
+            "SELECT MAX(executed_at) FROM bot_commands " +
+            "WHERE command = 'run_digest' AND status = 'done'");
 
         var articlesToday = await conn.ExecuteScalarAsync<int>(
             "SELECT COUNT(*) FROM seen_articles WHERE channel_id = @channelId AND DATE(seen_at) = CURDATE()",
@@ -160,8 +176,10 @@ public static class DNewsCommands
             "WHERE cc.channel_id = @channelId AND cf.active = 1",
             new { channelId });
 
-        var lastRunStr = lastRun.HasValue
-            ? lastRun.Value.ToString("dd.MM.yyyy HH:mm") + " UTC"
+        var lastRunStr = lastRunUtc.HasValue
+            ? TimeZoneInfo.ConvertTimeFromUtc(
+                DateTime.SpecifyKind(lastRunUtc.Value, DateTimeKind.Utc), _tz)
+                .ToString("dd.MM.yyyy HH:mm") + " Uhr"
             : "Noch kein Lauf";
 
         await cmd.RespondAsync(
