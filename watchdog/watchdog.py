@@ -72,6 +72,8 @@ COMMANDS: dict[str, tuple[list[str], int]] = {
     'stop_bot':         (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'stop', 'bot'],     30),
     'restart_bot':      (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'restart', 'bot'],  30),
     'restart_watchdog': (['systemctl', 'restart', 'daily-news-watchdog'],                              30),
+    'run_digest':       (['curl', '--fail', '--silent', '--show-error', '--max-time', '120',
+                          '-X', 'POST', 'http://localhost:8082/internal/run-digest'],                 130),
     'deploy_bot':       (['bash', f'{PROJ}/deploy-bot.sh'],                                           600),
     'deploy_frontend':  (['bash', f'{PROJ}/deploy-frontend.sh'],                                      600),
     'deploy_watchdog':  (['bash', f'{PROJ}/deploy-watchdog.sh'],                                      300),
@@ -107,14 +109,19 @@ def _mark_bot_offline(conn: mysql.connector.MySQLConnection) -> None:
 def process_pending(conn: mysql.connector.MySQLConnection) -> None:
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
-        "SELECT id, command FROM bot_commands "
+        "SELECT id, command, created_by FROM bot_commands "
         "WHERE status = 'pending' ORDER BY created_at ASC"
     )
     rows = cursor.fetchall()
 
     for row in rows:
-        cmd_id  = row['id']
-        command = row['command']
+        cmd_id     = row['id']
+        command    = row['command']
+        created_by = row.get('created_by', '')
+
+        # Scheduler-eigene run_digest-Einträge werden vom Bot selbst abgearbeitet
+        if command == 'run_digest' and created_by == 'scheduler':
+            continue
 
         if command not in COMMANDS:
             log.warning(f"Unbekannter Befehl '{command}' (id={cmd_id}) — übersprungen")
