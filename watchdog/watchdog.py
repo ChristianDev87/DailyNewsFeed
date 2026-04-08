@@ -72,7 +72,7 @@ COMMANDS: dict[str, tuple[list[str], int]] = {
     'stop_bot':         (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'stop', 'bot'],     30),
     'restart_bot':      (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'restart', 'bot'],  30),
     'restart_watchdog': (['systemctl', 'restart', 'daily-news-watchdog'],                              30),
-    'run_digest':       (['curl', '--fail', '--silent', '--max-time', '120',
+    'run_digest':       (['curl', '--fail', '--silent', '--show-error', '--max-time', '120',
                           '-X', 'POST', 'http://localhost:8082/internal/run-digest'],                 130),
     'deploy_bot':       (['bash', f'{PROJ}/deploy-bot.sh'],                                           600),
     'deploy_frontend':  (['bash', f'{PROJ}/deploy-frontend.sh'],                                      600),
