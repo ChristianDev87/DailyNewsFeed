@@ -11,6 +11,8 @@ services:
       db:
         condition: service_healthy
         required: false   # ignoriert wenn db-Profil nicht aktiv (Option A)
+    ports:
+      - "127.0.0.1:8082:8080"
     volumes:
       - /var/log/dailynews/bot:/app/logs
 
