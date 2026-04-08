@@ -18,7 +18,8 @@ public class Database
         _connectionString =
             $"Server={host};Port={port};Database={name};" +
             $"User={user};Password={pass};" +
-            $"MaximumPoolSize={pool};AllowZeroDateTime=True;ConvertZeroDateTime=True;";
+            $"MaximumPoolSize={pool};AllowZeroDateTime=True;ConvertZeroDateTime=True;" +
+            $"ConnectionTimezone=UTC;";
     }
 
     public MySqlConnection GetConnection() => new(_connectionString);
