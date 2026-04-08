@@ -40,6 +40,18 @@
     <p id="bot-msg" style="margin-top:10px;font-size:14px"></p>
 </div>
 
+<div class="bot-panel" style="margin-top:24px">
+    <h2>Deployment</h2>
+    <div class="actions">
+        <button class="btn btn-primary" onclick="botCmd('deploy_bot', 'deploy-msg')">🚀 Bot deployen</button>
+        <button class="btn btn-primary" onclick="botCmd('deploy_frontend', 'deploy-msg')">🚀 Frontend deployen</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-top:8px">
+        Führt git pull + docker build + docker up auf dem Server aus (~1–2 Min). Watchdog-Redeploy: SSH nötig.
+    </p>
+    <p id="deploy-msg" style="margin-top:10px;font-size:14px"></p>
+</div>
+
 <div style="display:flex;align-items:baseline;gap:12px;margin-top:32px">
     <h2 style="margin:0">Befehls-Historie</h2>
     <span style="color:var(--muted);font-size:13px"><?= $totalCmds ?> Einträge</span>
@@ -233,8 +245,8 @@ function changePerPage(val) {
     window.location.href = url.toString();
 }
 
-async function botCmd(command) {
-    const msgEl = document.getElementById('bot-msg');
+async function botCmd(command, msgId = 'bot-msg') {
+    const msgEl = document.getElementById(msgId);
     msgEl.textContent = 'Sende…';
     const res  = await fetch('/api/bot/command', {
         method: 'POST',
