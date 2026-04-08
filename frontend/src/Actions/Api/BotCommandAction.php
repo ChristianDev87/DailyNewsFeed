@@ -10,7 +10,7 @@ use Slim\Psr7\Response;
 
 class BotCommandAction
 {
-    private const ALLOWED = ['restart_bot', 'run_digest', 'stop_bot'];
+    private const ALLOWED = ['restart_bot', 'run_digest', 'stop_bot', 'deploy_bot', 'deploy_frontend'];
 
     public function __construct(private Database $db) {}
 
@@ -36,9 +36,11 @@ class BotCommandAction
         return $this->json($response, [
             'success' => true,
             'message' => match ($command) {
-                'restart_bot' => 'Neustart-Befehl gesendet.',
-                'run_digest'  => 'Digest wird ausgeführt.',
-                'stop_bot'    => 'Stop-Befehl gesendet.',
+                'restart_bot'     => 'Neustart-Befehl gesendet.',
+                'run_digest'      => 'Digest wird ausgeführt.',
+                'stop_bot'        => 'Stop-Befehl gesendet.',
+                'deploy_bot'      => 'Bot-Deploy gesendet — läuft im Hintergrund (~1–2 Min).',
+                'deploy_frontend' => 'Frontend-Deploy gesendet — läuft im Hintergrund (~1–2 Min).',
             },
         ]);
     }
