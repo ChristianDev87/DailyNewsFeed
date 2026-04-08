@@ -2,6 +2,9 @@ services:
   bot:
     build:
       context: ./discordbot
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
     restart: unless-stopped
     env_file: .env
     depends_on:
@@ -14,6 +17,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
     restart: unless-stopped
     env_file: .env
     depends_on:
