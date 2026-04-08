@@ -173,10 +173,15 @@
 
     window.loadLogs = async function () {
         const lines = document.getElementById('log-lines').value;
-        const url   = `/api/admin/logs?source=${_source}&lines=${lines}&file=${_file}`;
+        const url   = `/api/admin/logs?source=${encodeURIComponent(_source)}&lines=${encodeURIComponent(lines)}&file=${encodeURIComponent(_file)}`;
         const tbody = document.getElementById('log-body');
         try {
             const res  = await fetch(url);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                tbody.innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Fehler ${res.status}: ${esc(err.error ?? res.statusText)}</td></tr>`;
+                return;
+            }
             const data = await res.json();
             if (!data.lines || data.lines.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted)">Keine Einträge.</td></tr>';
