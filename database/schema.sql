@@ -128,14 +128,14 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- -----------------------------------------------------------------------------
 -- bot_commands
 -- Kommunikationsbrücke: PHP schreibt Befehle, Watchdog liest und führt aus.
--- Erlaubte Werte für command: 'restart_bot', 'restart_watchdog', 'deploy_bot', 'deploy_frontend', 'deploy_watchdog', 'run_digest'
+-- Erlaubte Werte für command: 'restart_bot', 'restart_watchdog', 'stop_bot', 'deploy_bot', 'deploy_frontend', 'deploy_watchdog', 'run_digest'
 -- Erlaubte Werte für status:  'pending', 'in_progress', 'done', 'failed'
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS bot_commands (
     id          INT         NOT NULL AUTO_INCREMENT,
     command     VARCHAR(50) NOT NULL,
     status      VARCHAR(20) NOT NULL DEFAULT 'pending',
-    created_by  VARCHAR(32),                           -- 'scheduler', 'admin', 'discord:<userId>'
+    created_by  VARCHAR(32),                           -- 'scheduler', '<discordUserId>' (Frontend-Admin), 'discord:<discordUserId>' (Discord-Befehl)
     created_at  DATETIME    NOT NULL,
     executed_at DATETIME    NULL,
     PRIMARY KEY (id),
