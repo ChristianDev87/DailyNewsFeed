@@ -8,6 +8,9 @@
  * @var int    $totalPages
  * @var int    $totalCmds
  */
+$fmtBerlin = static fn (?string $ts): string => $ts
+    ? (new \DateTime($ts, new \DateTimeZone('UTC')))->setTimezone(new \DateTimeZone('Europe/Berlin'))->format('d.m.Y H:i')
+    : '—';
 ?>
 <h1>Admin</h1>
 
@@ -88,8 +91,8 @@
                     } ?>
                 </span>
             </td>
-            <td><?= htmlspecialchars(date('d.m.Y H:i', strtotime($cmd['created_at'])), ENT_QUOTES) ?></td>
-            <td><?= $cmd['executed_at'] ? htmlspecialchars(date('d.m.Y H:i', strtotime($cmd['executed_at'])), ENT_QUOTES) : '—' ?></td>
+            <td><?= htmlspecialchars($fmtBerlin($cmd['created_at']), ENT_QUOTES) ?></td>
+            <td><?= htmlspecialchars($fmtBerlin($cmd['executed_at']), ENT_QUOTES) ?></td>
         </tr>
     <?php endforeach; ?>
     </tbody>
