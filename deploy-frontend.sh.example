@@ -1,0 +1,21 @@
+#!/bin/bash
+# Deploy-Script für das PHP-Frontend (Docker-Container)
+#
+# Voraussetzungen auf dem Host:
+#   - git
+#   - docker + docker compose (Plugin, nicht standalone)
+#   - Projekt liegt unter /opt/daily-news (PROJECT_DIR anpassen falls abweichend)
+#
+# Einrichten:
+#   cp deploy-frontend.sh.example deploy-frontend.sh
+#   chmod +x deploy-frontend.sh
+#
+set -e
+PROJ=/opt/daily-news
+cd "$PROJ"
+
+echo "=== Frontend deployen ==="
+git pull origin main
+docker compose build frontend
+docker compose up -d --no-deps frontend
+echo "=== Frontend: Fertig ==="
