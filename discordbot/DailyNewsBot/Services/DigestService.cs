@@ -218,8 +218,7 @@ public class DigestService
         var today = NowBerlin().Date;
 
         // Bestehenden Thread suchen
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync(ct);
+        await using var conn = await _db.GetOpenConnectionAsync(ct);
 
         var existingThreadId = await conn.ExecuteScalarAsync<string?>(
             "SELECT thread_id FROM daily_threads WHERE date = @date AND channel_id = @channelId",
@@ -279,16 +278,14 @@ public class DigestService
 
     private async Task<List<string>> GetActiveChannelIdsAsync(CancellationToken ct = default)
     {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync(ct);
+        await using var conn = await _db.GetOpenConnectionAsync(ct);
         return (await conn.QueryAsync<string>(
             "SELECT channel_id FROM channels WHERE active = 1")).ToList();
     }
 
     private async Task<List<CategoryData>> GetCategoriesForChannelAsync(string channelId, CancellationToken ct = default)
     {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync(ct);
+        await using var conn = await _db.GetOpenConnectionAsync(ct);
 
         var categories = (await conn.QueryAsync<Category>(
             "SELECT * FROM channel_categories WHERE channel_id = @channelId AND active = 1 ORDER BY position",
@@ -315,8 +312,7 @@ public class DigestService
     {
         if (!articles.Any()) return;
 
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync();
+        await using var conn = await _db.GetOpenConnectionAsync();
 
         await conn.ExecuteAsync(
             "INSERT IGNORE INTO seen_articles (url_hash, channel_id, url, title, source, seen_at) " +

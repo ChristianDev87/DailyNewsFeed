@@ -18,16 +18,20 @@ public class Database
         _connectionString =
             $"Server={host};Port={port};Database={name};" +
             $"User={user};Password={pass};" +
-            $"MaximumPoolSize={pool};AllowZeroDateTime=True;ConvertZeroDateTime=True;" +
-            $"ConnectionTimezone=UTC;";
+            $"MaximumPoolSize={pool};AllowZeroDateTime=True;ConvertZeroDateTime=True;";
     }
 
     public MySqlConnection GetConnection() => new(_connectionString);
 
+    // Opens a connection and immediately runs SET time_zone = '+00:00' so that
+    // NOW() always returns UTC regardless of the server's system timezone.
     public async Task<MySqlConnection> GetOpenConnectionAsync(CancellationToken ct = default)
     {
         var conn = GetConnection();
         await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SET time_zone = '+00:00'";
+        await cmd.ExecuteNonQueryAsync(ct);
         return conn;
     }
 }

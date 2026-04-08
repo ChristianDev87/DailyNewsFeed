@@ -47,8 +47,7 @@ public static class DNewsCommands
         var guildId   = (cmd.Channel as SocketGuildChannel)?.Guild.Id.ToString() ?? "";
         var guildName = (cmd.Channel as SocketGuildChannel)?.Guild.Name ?? "";
 
-        using var conn = db.GetConnection();
-        await conn.OpenAsync();
+        await using var conn = await db.GetOpenConnectionAsync();
 
         var existing = await conn.ExecuteScalarAsync<int>(
             "SELECT COUNT(*) FROM channels WHERE channel_id = @channelId",
@@ -97,8 +96,7 @@ public static class DNewsCommands
 
         var channelId = cmd.Channel.Id.ToString();
 
-        using var conn = db.GetConnection();
-        await conn.OpenAsync();
+        await using var conn = await db.GetOpenConnectionAsync();
 
         var active = await conn.ExecuteScalarAsync<int>(
             "SELECT COUNT(*) FROM channels WHERE channel_id = @channelId AND active = 1",
@@ -155,8 +153,7 @@ public static class DNewsCommands
     {
         var channelId = cmd.Channel.Id.ToString();
 
-        using var conn = db.GetConnection();
-        await conn.OpenAsync();
+        await using var conn = await db.GetOpenConnectionAsync();
 
         var lastRunUtc = await conn.ExecuteScalarAsync<DateTime?>(
             "SELECT MAX(executed_at) FROM bot_commands " +
@@ -197,8 +194,7 @@ public static class DNewsCommands
 
         var channelId = cmd.Channel.Id.ToString();
 
-        using var conn = db.GetConnection();
-        await conn.OpenAsync();
+        await using var conn = await db.GetOpenConnectionAsync();
 
         var categories = (await conn.QueryAsync(
             "SELECT cc.label, cc.emoji, cf.name, cf.url " +
@@ -235,8 +231,7 @@ public static class DNewsCommands
         }
 
         var channelId = cmd.Channel.Id.ToString();
-        using var conn = db.GetConnection();
-        await conn.OpenAsync();
+        await using var conn = await db.GetOpenConnectionAsync();
 
         await conn.ExecuteAsync(
             "UPDATE channels SET active = 0 WHERE channel_id = @channelId",
@@ -255,8 +250,7 @@ public static class DNewsCommands
         }
 
         var channelId = cmd.Channel.Id.ToString();
-        using var conn = db.GetConnection();
-        await conn.OpenAsync();
+        await using var conn = await db.GetOpenConnectionAsync();
 
         await conn.ExecuteAsync(
             "UPDATE channels SET active = 1 WHERE channel_id = @channelId",
