@@ -1,0 +1,42 @@
+# Lokal only — nie committen
+UEBERARBEITUNG.md
+deploy-bot.sh
+deploy-frontend.sh
+deploy-watchdog.sh
+
+# Secrets
+.env
+
+# PHP
+frontend/.env
+frontend/src/Actions/DevLoginAction.php
+
+# .NET Build Output
+DailyNewsBot/**/bin/
+DailyNewsBot/**/obj/
+
+# Logs
+*.log
+logs/
+
+# Brainstorming Sessions + Planungsdokumente
+.superpowers/
+docs/superpowers/
+
+# Worktrees
+.worktrees/
+
+# Root-Skripte (lokal)
+news_digest.py
+test_feeds.py
+NEWSDIGEST_*.md
+
+# PHPUnit Cache
+frontend/.phpunit.result.cache
+
+# Backup (lokale Sicherung vor Überarbeitung)
+backup/
+
+# OS
+.DS_Store
+Thumbs.db
