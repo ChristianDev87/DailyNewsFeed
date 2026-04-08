@@ -5,6 +5,9 @@
  * @var string $csrfToken
  * @var string $inviteUrl
  */
+$fmtBerlin = static fn (?string $ts): string => $ts
+    ? (new \DateTime($ts, new \DateTimeZone('UTC')))->setTimezone(new \DateTimeZone('Europe/Berlin'))->format('d.m.Y H:i')
+    : '';
 ?>
 <h1>Dashboard</h1>
 
@@ -55,7 +58,7 @@
             #<?= htmlspecialchars($ch['channel_name'] ?? $ch['channel_id'], ENT_QUOTES) ?>
             · <?= htmlspecialchars((string)$ch['feed_count'], ENT_QUOTES) ?> Feeds
             · <?= $ch['last_digest_at']
-                ? 'Letzter Digest: ' . htmlspecialchars(date('d.m.Y H:i', strtotime($ch['last_digest_at'])), ENT_QUOTES)
+                ? 'Letzter Digest: ' . htmlspecialchars($fmtBerlin($ch['last_digest_at']), ENT_QUOTES)
                 : 'Noch kein Digest' ?>
         </div>
         <div class="card-actions">
