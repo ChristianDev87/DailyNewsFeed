@@ -17,3 +17,23 @@ services:
     volumes:
       - /var/log/dailynews/frontend:/var/log/nginx
       - /var/log/dailynews:/var/log/dailynews:ro
+
+  # Option B — MariaDB im Docker
+  # Starten mit: docker compose --profile with-db up -d
+  db:
+    image: mariadb:10.11
+    profiles: ["with-db"]
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASS}
+    ports:
+      - "127.0.0.1:${DB_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+
+volumes:
+  db_data:
