@@ -101,7 +101,19 @@ systemctl daemon-reload
 systemctl enable --now daily-news-watchdog
 ```
 
-### 7. Reverse Proxy konfigurieren
+### 7. Deploy-Scripts einrichten
+
+```bash
+cp deploy-bot.sh.example deploy-bot.sh
+cp deploy-frontend.sh.example deploy-frontend.sh
+cp deploy-watchdog.sh.example deploy-watchdog.sh
+chmod +x deploy-bot.sh deploy-frontend.sh deploy-watchdog.sh
+```
+
+Die Scripts werden vom Watchdog (und manuell) aufgerufen um neue Code-Stände auszurollen.
+Sie sind gitigniert — Pfad und sonstige Anpassungen bleiben lokal.
+
+### 8. Reverse Proxy konfigurieren
 
 **Apache2:**
 ```apache

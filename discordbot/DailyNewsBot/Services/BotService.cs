@@ -179,29 +179,36 @@ public class BotService : BackgroundService, IBotClientProvider
 
     private async Task InitializeCustomClientsAsync()
     {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync();
-
-        var channels = (await conn.QueryAsync<Models.Channel>(
-            "SELECT * FROM channels WHERE custom_bot_token_encrypted IS NOT NULL AND active = 1"))
-            .ToList();
-
-        foreach (var channel in channels)
+        try
         {
-            try
+            using var conn = _db.GetConnection();
+            await conn.OpenAsync();
+
+            var channels = (await conn.QueryAsync<Models.Channel>(
+                "SELECT * FROM channels WHERE custom_bot_token_encrypted IS NOT NULL AND active = 1"))
+                .ToList();
+
+            foreach (var channel in channels)
             {
-                var token = DecryptToken(channel.CustomBotTokenEncrypted!, channel.CustomBotTokenIv!);
-                var client = new DiscordRestClient();
-                await client.LoginAsync(TokenType.Bot, token);
-                _customClients[channel.ChannelId] = client;
-                _logger.LogInformation("Custom-Client für Kanal {ChannelId} initialisiert", channel.ChannelId);
+                try
+                {
+                    var token = DecryptToken(channel.CustomBotTokenEncrypted!, channel.CustomBotTokenIv!);
+                    var client = new DiscordRestClient();
+                    await client.LoginAsync(TokenType.Bot, token);
+                    _customClients[channel.ChannelId] = client;
+                    _logger.LogInformation("Custom-Client für Kanal {ChannelId} initialisiert", channel.ChannelId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Custom-Token für Kanal {ChannelId} ungültig — Fallback auf Standard-Token",
+                        channel.ChannelId);
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex,
-                    "Custom-Token für Kanal {ChannelId} ungültig — Fallback auf Standard-Token",
-                    channel.ChannelId);
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Custom-Clients konnten nicht initialisiert werden — Fallback auf Standard-Token für alle Kanäle");
         }
     }
 
