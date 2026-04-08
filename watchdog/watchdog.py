@@ -51,9 +51,11 @@ POLL_INTERVAL = int(os.environ.get('WATCHDOG_INTERVAL', '10'))
 
 
 def get_connection() -> mysql.connector.MySQLConnection:
+    # WATCHDOG_DB_HOST/PORT überschreiben DB_HOST/PORT — nötig wenn DB im Docker läuft
+    # (Watchdog ist auf dem Host und kann den Docker-internen Hostnamen 'db' nicht auflösen)
     return mysql.connector.connect(
-        host=os.environ.get('DB_HOST', 'localhost'),
-        port=int(os.environ.get('DB_PORT', '3306')),
+        host=os.environ.get('WATCHDOG_DB_HOST', os.environ.get('DB_HOST', 'localhost')),
+        port=int(os.environ.get('WATCHDOG_DB_PORT', os.environ.get('DB_PORT', '3306'))),
         database=os.environ.get('DB_NAME', 'daily_news'),
         user=os.environ['DB_USER'],
         password=os.environ['DB_PASS'],

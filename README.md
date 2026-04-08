@@ -21,7 +21,7 @@ Frontend und Bot laufen als Docker-Container. Der Watchdog läuft als systemd-Se
 ## Voraussetzungen
 
 - **Docker** + **Docker Compose**
-- **MariaDB 10.6+** oder **MySQL 8+** (extern, nicht im Container)
+- **MariaDB 10.6+** oder **MySQL 8+** — extern (Option A) oder als Docker-Container (Option B)
 - **Discord-Bot-Account** mit aktivierten Gateway Intents
 - **Discord OAuth2 App** für das Web-Frontend
 - **Reverse Proxy** auf dem Host (Apache2 oder Nginx) für Port 80/443
@@ -48,10 +48,28 @@ Alle Pflichtfelder ausfüllen — siehe [Konfiguration](#konfiguration).
 
 ### 3. Datenbank einrichten
 
+**Option A — Externe MariaDB** (eigene Datenbank vorhanden):
+
 ```bash
-# Schema einspielen (einmalig)
 mysql -u root -p < database/schema.sql
 mysql -u root -p < database/create_user.sql
+```
+
+In `.env`:
+```
+DB_HOST=dein-datenbankserver
+DB_PORT=3306
+```
+
+**Option B — MariaDB im Docker** (keine eigene Datenbank):
+
+Schema wird beim ersten Start automatisch eingespielt. In `.env` eintragen:
+```
+DB_HOST=db               # Docker-interner Hostname
+DB_PORT=3306
+DB_ROOT_PASS=sicheres-passwort
+WATCHDOG_DB_HOST=127.0.0.1   # Watchdog läuft auf dem Host
+WATCHDOG_DB_PORT=3306
 ```
 
 ### 4. Log-Verzeichnisse anlegen
@@ -62,8 +80,14 @@ mkdir -p /var/log/dailynews/{bot,watchdog,frontend}
 
 ### 5. Container starten
 
+**Option A:**
 ```bash
 docker compose up -d
+```
+
+**Option B** (mit DB-Container):
+```bash
+docker compose --profile with-db up -d
 ```
 
 ### 6. Watchdog einrichten
@@ -112,11 +136,14 @@ Alle Variablen in `.env` (Vorlage: `.env.example`):
 
 | Variable | Pflicht | Beschreibung |
 |---|---|---|
-| `DB_HOST` | ✅ | Datenbank-Host (z.B. `localhost`) |
-| `DB_PORT` | ✅ | Datenbank-Port (z.B. `3306`) |
+| `DB_HOST` | ✅ | Datenbank-Host — Option A: z.B. `localhost`, Option B: `db` |
+| `DB_PORT` | ✅ | Datenbank-Port (Standard: `3306`) |
 | `DB_NAME` | ✅ | Datenbankname |
 | `DB_USER` | ✅ | Datenbankbenutzer |
 | `DB_PASS` | ✅ | Datenbankpasswort |
+| `DB_ROOT_PASS` | Option B | Root-Passwort für den MariaDB-Container |
+| `WATCHDOG_DB_HOST` | Option B | DB-Host für den Watchdog (`127.0.0.1`) — überschreibt `DB_HOST` |
+| `WATCHDOG_DB_PORT` | Option B | DB-Port für den Watchdog — überschreibt `DB_PORT` |
 | `DISCORD_TOKEN` | ✅ | Bot-Token aus dem Discord Developer Portal |
 | `TOKEN_ENCRYPTION_KEY` | ✅ | AES-256 Schlüssel (min. 32 Zeichen) — für Custom Bot Tokens |
 | `DISCORD_CLIENT_ID` | ✅ | OAuth2 Client ID (Frontend-Login) |
