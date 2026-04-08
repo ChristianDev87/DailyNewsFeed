@@ -7,6 +7,7 @@ namespace DailyNewsBot.Tests;
 public class FeedFetcherTests
 {
     [Theory]
+    [InlineData("0.0.0.0",         true)]   // unspecified address
     [InlineData("127.0.0.1",       true)]   // loopback
     [InlineData("127.0.0.50",      true)]   // loopback range
     [InlineData("10.0.0.1",        true)]   // private A
