@@ -12,8 +12,11 @@ frontend/.env
 frontend/src/Actions/DevLoginAction.php
 
 # .NET Build Output
-DailyNewsBot/**/bin/
-DailyNewsBot/**/obj/
+discordbot/**/bin/
+discordbot/**/obj/
+
+# PHP Vendor
+frontend/vendor/
 
 # Logs
 *.log
