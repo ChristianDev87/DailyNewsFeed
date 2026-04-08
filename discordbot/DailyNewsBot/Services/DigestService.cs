@@ -215,7 +215,7 @@ public class DigestService
     private async Task<ulong> GetOrCreateThreadAsync(
         string channelId, DiscordRestClient restClient, CancellationToken ct)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = NowBerlin().Date;
 
         // Bestehenden Thread suchen
         using var conn = _db.GetConnection();
@@ -243,7 +243,7 @@ public class DigestService
         }
 
         var thread = await textChannel.CreateThreadAsync(
-            name: $"🔔 Daily News — {DateTime.Now:dd.MM.yyyy}",
+            name: $"🔔 Daily News — {NowBerlin():dd.MM.yyyy}",
             autoArchiveDuration: ThreadArchiveDuration.OneWeek,
             type: ThreadType.PublicThread);
 

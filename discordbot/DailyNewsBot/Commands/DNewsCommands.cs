@@ -130,12 +130,6 @@ public static class DNewsCommands
 
         await cmd.DeferAsync();
 
-        await conn.ExecuteAsync(
-            "INSERT INTO bot_commands (command, status, created_by, created_at) " +
-            "VALUES ('run_digest', 'pending', @createdBy, NOW())",
-            new { createdBy = $"discord:{cmd.User.Id}" });
-        var cmdId = await conn.ExecuteScalarAsync<long>("SELECT LAST_INSERT_ID()");
-
         var status = "done";
         try
         {
@@ -150,8 +144,9 @@ public static class DNewsCommands
         finally
         {
             await conn.ExecuteAsync(
-                "UPDATE bot_commands SET status = @status, executed_at = NOW() WHERE id = @cmdId",
-                new { status, cmdId });
+                "INSERT INTO bot_commands (command, status, created_by, created_at, executed_at) " +
+                "VALUES ('run_digest', @status, @createdBy, NOW(), NOW())",
+                new { status, createdBy = $"discord:{cmd.User.Id}" });
         }
     }
 
