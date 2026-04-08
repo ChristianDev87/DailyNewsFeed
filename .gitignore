@@ -19,6 +19,18 @@ discordbot/**/obj/
 # PHP Vendor
 frontend/vendor/
 
+# Python venv
+watchdog/venv/
+
+# Home-Verzeichnis Dotfiles (wenn /opt/daily-news als Home-Dir genutzt wird)
+.bashrc
+.bash_logout
+.bash_history
+.profile
+.cache/
+.docker/
+.cloud-locale-test.skip
+
 # Logs
 *.log
 logs/
