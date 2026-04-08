@@ -142,3 +142,33 @@ CREATE TABLE IF NOT EXISTS bot_commands (
     INDEX idx_status  (status),
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- known_guilds
+-- Bekannte Discord-Server. Wird beim Bot-Start und bei Guild-Events synchronisiert.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS known_guilds (
+    guild_id    VARCHAR(32)  NOT NULL,
+    guild_name  VARCHAR(255),
+    active      TINYINT(1)   NOT NULL DEFAULT 1,
+    joined_at   DATETIME     NOT NULL,
+    updated_at  DATETIME     NOT NULL,
+    PRIMARY KEY (guild_id),
+    INDEX idx_active (active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- bot_status
+-- Heartbeat: der Bot schreibt alle N Sekunden seinen Status.
+-- Immer genau eine Zeile (id=1) — INSERT ... ON DUPLICATE KEY UPDATE.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS bot_status (
+    id          INT          NOT NULL,
+    last_seen   DATETIME     NOT NULL,
+    status      VARCHAR(20)  NOT NULL DEFAULT 'offline',
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Initialzeile für bot_status (id=1 muss existieren)
+INSERT IGNORE INTO bot_status (id, last_seen, status)
+VALUES (1, UTC_TIMESTAMP(), 'offline');
