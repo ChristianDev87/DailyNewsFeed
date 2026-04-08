@@ -103,12 +103,31 @@ class AdminLogsAction
             if (!is_array($data)) {
                 return ['raw' => $line];
             }
+            $template = $data['@mt'] ?? $line;
+            $message  = $data['@m'] ?? self::renderTemplate($template, $data);
             return [
                 'timestamp' => $data['@t'] ?? '',
                 'level'     => $data['@l'] ?? 'Information',
-                'message'   => $data['@m'] ?? $data['@mt'] ?? $line,
+                'message'   => $message,
             ];
         }, $rawLines);
+    }
+
+    /**
+     * Renders a Serilog CLEF message template by substituting {Property} placeholders
+     * with their values from the top-level JSON properties.
+     * Format specifiers like {NextRun:HH:mm} are stripped — only the value is used.
+     */
+    private static function renderTemplate(string $template, array $data): string
+    {
+        return preg_replace_callback(
+            '/\{([^}:]+)(?::[^}]*)?\}/',
+            function (array $m) use ($data): string {
+                $key = $m[1];
+                return array_key_exists($key, $data) ? (string)$data[$key] : $m[0];
+            },
+            $template
+        );
     }
 
     private function json(Response $response, array $data, int $status = 200): ResponseInterface
