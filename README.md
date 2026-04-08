@@ -144,7 +144,7 @@ Alle Variablen in `.env` (Vorlage: `.env.example`):
 | `DB_ROOT_PASS` | Option B | Root-Passwort für den MariaDB-Container |
 | `WATCHDOG_DB_HOST` | Option B | DB-Host für den Watchdog (`127.0.0.1`) — überschreibt `DB_HOST` |
 | `WATCHDOG_DB_PORT` | Option B | `3307` — Container ist auf Host-Port 3307 erreichbar (kein Konflikt mit vorhandenem MySQL) |
-| `DISCORD_TOKEN` | ✅ | Bot-Token aus dem Discord Developer Portal |
+| `DISCORD_BOT_TOKEN` | ✅ | Bot-Token aus dem Discord Developer Portal |
 | `TOKEN_ENCRYPTION_KEY` | ✅ | AES-256 Schlüssel (min. 32 Zeichen) — für Custom Bot Tokens |
 | `DISCORD_CLIENT_ID` | ✅ | OAuth2 Client ID (Frontend-Login) |
 | `DISCORD_CLIENT_SECRET` | ✅ | OAuth2 Client Secret |
