@@ -71,16 +71,28 @@ class AdminLogsAction
         if (empty($files)) {
             return null;
         }
-        usort($files, fn(string $a, string $b) => filemtime($b) - filemtime($a));
+        usort($files, fn(string $a, string $b) => strcmp($b, $a));
         return $files[0];
     }
 
     private function tailFile(string $path, int $n): array
     {
-        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if ($lines === false) {
+        $fp = @fopen($path, 'rb');
+        if ($fp === false) {
             return [];
         }
+        fseek($fp, 0, SEEK_END);
+        $size      = ftell($fp);
+        $buffer    = '';
+        $chunkSize = 8192;
+        $pos       = $size;
+        while ($pos > 0 && substr_count($buffer, "\n") <= $n) {
+            $pos    = max(0, $pos - $chunkSize);
+            fseek($fp, $pos);
+            $buffer = fread($fp, min($chunkSize, $size - $pos)) . $buffer;
+        }
+        fclose($fp);
+        $lines = explode("\n", rtrim($buffer));
         return array_slice($lines, -$n);
     }
 
@@ -101,7 +113,7 @@ class AdminLogsAction
 
     private function json(Response $response, array $data, int $status = 200): ResponseInterface
     {
-        $response->getBody()->write(json_encode($data));
+        $response->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
         return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
     }
 }
