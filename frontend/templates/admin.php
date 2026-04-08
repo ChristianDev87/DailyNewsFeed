@@ -108,6 +108,118 @@
 
 <?php endif; ?>
 
+<style>
+.log-tab.active { background: var(--accent, #5865f2); color: #fff; }
+</style>
+
+<div class="bot-panel" style="margin-top:32px">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <h2 style="margin:0">Logs</h2>
+        <div style="display:flex;gap:4px">
+            <button class="log-tab btn btn-ghost btn-sm active" data-source="bot" data-file="">Bot</button>
+            <button class="log-tab btn btn-ghost btn-sm" data-source="watchdog" data-file="">Watchdog</button>
+            <button class="log-tab btn btn-ghost btn-sm" data-source="frontend" data-file="access">Nginx Access</button>
+            <button class="log-tab btn btn-ghost btn-sm" data-source="frontend" data-file="error">Nginx Error</button>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="log-lines" class="per-page-select">
+                <?php foreach ([50, 100, 200, 500] as $n): ?>
+                    <option value="<?= $n ?>" <?= $n === 200 ? 'selected' : '' ?>><?= $n ?> Zeilen</option>
+                <?php endforeach; ?>
+            </select>
+            <label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="log-live"> Live
+            </label>
+            <button class="btn btn-ghost btn-sm" onclick="loadLogs()">↻ Aktualisieren</button>
+        </div>
+    </div>
+    <div id="log-container" class="table-wrap" style="max-height:420px;overflow-y:auto;margin-top:0">
+        <table class="data-table">
+            <thead>
+                <tr><th style="white-space:nowrap">Zeitpunkt</th><th>Level</th><th style="width:100%">Nachricht</th></tr>
+            </thead>
+            <tbody id="log-body">
+                <tr><td colspan="3" style="color:var(--muted)">Klicke Aktualisieren…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+(function () {
+    let _source    = 'bot';
+    let _file      = '';
+    let _liveTimer = null;
+
+    document.querySelectorAll('.log-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.log-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            _source = btn.dataset.source;
+            _file   = btn.dataset.file ?? '';
+            loadLogs();
+        });
+    });
+
+    document.getElementById('log-live').addEventListener('change', function () {
+        if (this.checked) {
+            loadLogs();
+            _liveTimer = setInterval(loadLogs, 5000);
+        } else {
+            clearInterval(_liveTimer);
+            _liveTimer = null;
+        }
+    });
+
+    window.loadLogs = async function () {
+        const lines = document.getElementById('log-lines').value;
+        const url   = `/api/admin/logs?source=${_source}&lines=${lines}&file=${_file}`;
+        const tbody = document.getElementById('log-body');
+        try {
+            const res  = await fetch(url);
+            const data = await res.json();
+            if (!data.lines || data.lines.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted)">Keine Einträge.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.lines.map(l => l.raw !== undefined
+                ? `<tr><td colspan="3"><code style="font-size:12px;word-break:break-all">${esc(l.raw)}</code></td></tr>`
+                : `<tr>
+                    <td style="white-space:nowrap;font-size:12px">${esc(fmtTs(l.timestamp))}</td>
+                    <td><span class="status-badge ${lvlClass(l.level)}">${esc(l.level)}</span></td>
+                    <td style="font-size:13px;word-break:break-word">${esc(l.message)}</td>
+                   </tr>`
+            ).join('');
+            const c = document.getElementById('log-container');
+            c.scrollTop = c.scrollHeight;
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Fehler: ${esc(e.message)}</td></tr>`;
+        }
+    };
+
+    function lvlClass(level) {
+        const l = (level ?? '').toLowerCase();
+        if (l === 'error' || l === 'critical') return 'status-failed';
+        if (l === 'warning') return 'status-pending';
+        return 'status-done';
+    }
+
+    function fmtTs(ts) {
+        if (!ts) return '—';
+        try { return new Date(ts).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' }); }
+        catch { return ts; }
+    }
+
+    function esc(s) {
+        return String(s ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+}());
+</script>
+
 <script>
 function changePerPage(val) {
     const url = new URL(window.location.href);
