@@ -1,3 +1,4 @@
+using Dapper;
 using DailyNewsBot.Data;
 using DailyNewsBot.Processing;
 using DailyNewsBot.Services;
@@ -73,18 +74,45 @@ try
 
     var app = builder.Build();
 
-    app.MapPost("/internal/run-digest", async (DigestService digestService, IBotClientProvider clientProvider, HttpContext ctx) =>
+    app.MapPost("/internal/run-digest", (
+        DigestService digestService,
+        IBotClientProvider clientProvider,
+        Database db,
+        IHostApplicationLifetime lifetime,
+        long cmdId = 0) =>
     {
-        try
+        _ = Task.Run(async () =>
         {
-            await digestService.RunAllChannelsAsync(clientProvider, ctx.RequestAborted);
-            return Results.Ok();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Fehler im /internal/run-digest Endpunkt");
-            return Results.StatusCode(500);
-        }
+            var status = "done";
+            try
+            {
+                await digestService.RunAllChannelsAsync(clientProvider, lifetime.ApplicationStopping);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Fehler im Digest-Hintergrundlauf (cmdId={CmdId})", cmdId);
+                status = "failed";
+            }
+            finally
+            {
+                if (cmdId > 0)
+                {
+                    try
+                    {
+                        using var conn = await db.GetOpenConnectionAsync();
+                        await conn.ExecuteAsync(
+                            "UPDATE bot_commands SET status = @status, executed_at = NOW() WHERE id = @cmdId",
+                            new { status, cmdId });
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Fehler beim Aktualisieren von bot_commands (id={CmdId})", cmdId);
+                    }
+                }
+            }
+        });
+
+        return Results.Accepted();
     });
 
     await app.RunAsync();
