@@ -65,4 +65,22 @@ class AdminLogsTest extends TestCase
 
         $this->assertSame('Information', $result[0]['level']);
     }
+
+    public function testRenderTemplateSubstitutesProperties(): void
+    {
+        // Serilog writes @mt (template) + top-level properties, no @m
+        $line = '{"@t":"2026-04-08T18:00:00.000Z","@mt":"Nächster Lauf: {NextRun:HH:mm} UTC","NextRun":"22:00"}';
+        $result = AdminLogsAction::parseJsonLines([$line]);
+
+        $this->assertSame('Nächster Lauf: 22:00 UTC', $result[0]['message']);
+    }
+
+    public function testRenderTemplateKeepsUnknownPlaceholders(): void
+    {
+        // Unknown properties stay as-is
+        $line = '{"@t":"2026-04-08T18:00:00.000Z","@mt":"Guild {GuildId} registriert"}';
+        $result = AdminLogsAction::parseJsonLines([$line]);
+
+        $this->assertSame('Guild {GuildId} registriert', $result[0]['message']);
+    }
 }
