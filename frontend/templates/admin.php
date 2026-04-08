@@ -255,6 +255,7 @@ async function botCmd(command, msgId = 'bot-msg') {
     });
     const data = await res.json();
     msgEl.textContent = data.message ?? (data.success ? 'Befehl gesendet.' : `Fehler: ${data.error}`);
-    if (res.ok) setTimeout(() => location.reload(), 2000);
+    const noreload = ['deploy_bot', 'deploy_frontend'];
+    if (res.ok && !noreload.includes(command)) setTimeout(() => location.reload(), 2000);
 }
 </script>
