@@ -32,6 +32,20 @@ public class FeedFetcherTests
     }
 
     [Fact]
+    public void IsPrivateAddress_IPv6UniqueLocal_ReturnsTrue()
+    {
+        // fc00::/7 ULA — IPv6 equivalent of RFC 1918 private space
+        Assert.True(FeedFetcher.IsPrivateAddress(IPAddress.Parse("fd12:3456:789a::1")));
+    }
+
+    [Fact]
+    public void IsPrivateAddress_IPv6LinkLocal_ReturnsTrue()
+    {
+        // fe80::/10 — IPv6 link-local, equivalent of 169.254.0.0/16
+        Assert.True(FeedFetcher.IsPrivateAddress(IPAddress.Parse("fe80::1")));
+    }
+
+    [Fact]
     public void IsPrivateAddress_IPv6Public_ReturnsFalse()
     {
         // 2001:4860:4860::8888 = Google DNS IPv6
