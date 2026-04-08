@@ -15,6 +15,12 @@ public class DigestService
     private readonly ILogger<DigestService> _logger;
     private readonly int _maxParallelFeeds;
 
+    private static readonly TimeZoneInfo _tz =
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+
+    private static DateTime NowBerlin() =>
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _tz);
+
 
     public DigestService(
         Database db,
@@ -168,19 +174,20 @@ public class DigestService
     private string BuildDigestText(
         List<(CategoryData Category, List<ProcessedArticle> Articles)> articlesByCategory)
     {
+        var now = NowBerlin();
+
         if (!articlesByCategory.Any())
         {
-            return $"🔄 **Update — {DateTime.Now:HH:mm} Uhr**\n" +
+            return $"🔄 **Update — {now:HH:mm} Uhr**\n" +
                    "✅ Keine neuen Artikel seit dem letzten Durchlauf.";
         }
 
         var sb = new StringBuilder();
-        var isFirstOfDay = IsFirstRunToday();
 
-        if (isFirstOfDay)
-            sb.AppendLine($"📰 **News-Digest — {DateTime.Now:dd.MM.yyyy}**");
+        if (IsFirstRunToday(now))
+            sb.AppendLine($"📰 **News-Digest — {now:dd.MM.yyyy}**");
         else
-            sb.AppendLine($"🔄 **Update — {DateTime.Now:HH:mm} Uhr**");
+            sb.AppendLine($"🔄 **Update — {now:HH:mm} Uhr**");
 
         foreach (var (category, articles) in articlesByCategory)
         {
@@ -202,18 +209,13 @@ public class DigestService
         return sb.ToString().TrimEnd();
     }
 
-    private bool IsFirstRunToday()
-    {
-        // Vereinfachte Prüfung: ist es der erste Lauf (00:00-04:00)?
-        // Eine robustere Implementierung könnte daily_threads prüfen
-        var hour = DateTime.Now.Hour;
-        return hour is >= 0 and < 4;
-    }
+    public static bool IsFirstRunToday(DateTime berlinNow) =>
+        berlinNow.Hour is >= 0 and < 4;
 
     private async Task<ulong> GetOrCreateThreadAsync(
         string channelId, DiscordRestClient restClient, CancellationToken ct)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = NowBerlin().Date;
 
         // Bestehenden Thread suchen
         using var conn = _db.GetConnection();
@@ -241,7 +243,7 @@ public class DigestService
         }
 
         var thread = await textChannel.CreateThreadAsync(
-            name: $"🔔 Daily News — {DateTime.Now:dd.MM.yyyy}",
+            name: $"🔔 Daily News — {NowBerlin():dd.MM.yyyy}",
             autoArchiveDuration: ThreadArchiveDuration.OneWeek,
             type: ThreadType.PublicThread);
 
