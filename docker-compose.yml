@@ -1,0 +1,19 @@
+services:
+  bot:
+    build:
+      context: ./discordbot
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - /var/log/dailynews/bot:/app/logs
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - /var/log/dailynews/frontend:/var/log/nginx
+      - /var/log/dailynews:/var/log/dailynews:ro
