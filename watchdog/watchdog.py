@@ -11,7 +11,9 @@ import sys
 import time
 import subprocess
 import logging
+import json
 from pathlib import Path
+from datetime import datetime, timezone
 
 import mysql.connector
 from dotenv import load_dotenv
@@ -33,11 +35,26 @@ if env_path:
     load_dotenv(env_path)
 
 # Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
+class JsonFormatter(logging.Formatter):
+    LEVEL_MAP = {
+        logging.DEBUG:    'Debug',
+        logging.INFO:     'Information',
+        logging.WARNING:  'Warning',
+        logging.ERROR:    'Error',
+        logging.CRITICAL: 'Critical',
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        ts = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        return json.dumps({
+            '@t': ts.strftime('%Y-%m-%dT%H:%M:%S.') + f'{ts.microsecond // 1000:03d}Z',
+            '@l': self.LEVEL_MAP.get(record.levelno, 'Information'),
+            '@mt': record.getMessage(),
+        }, ensure_ascii=False)
+
+_handler = logging.StreamHandler(sys.stdout)
+_handler.setFormatter(JsonFormatter())
+logging.basicConfig(level=logging.INFO, handlers=[_handler])
 log = logging.getLogger('watchdog')
 
 PROJ = os.environ.get('PROJECT_DIR', '/opt/daily-news')
