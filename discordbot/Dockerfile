@@ -8,7 +8,7 @@ RUN dotnet restore
 RUN dotnet publish DailyNewsBot -c Release -o /app/publish
 
 # Stage 2: Runtime (kein SDK im finalen Image)
-FROM mcr.microsoft.com/dotnet/runtime:9.0
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 
 # Nicht-Root-User für Log-Ownership auf dem Host-Volume
 # APP_UID/APP_GID muss mit dem Service-User auf dem Host übereinstimmen (z.B. dailynews)

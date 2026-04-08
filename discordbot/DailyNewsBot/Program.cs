@@ -73,11 +73,11 @@ try
 
     var app = builder.Build();
 
-    app.MapPost("/internal/run-digest", async (DigestService digestService, IBotClientProvider clientProvider) =>
+    app.MapPost("/internal/run-digest", async (DigestService digestService, IBotClientProvider clientProvider, HttpContext ctx) =>
     {
         try
         {
-            await digestService.RunAllChannelsAsync(clientProvider, CancellationToken.None);
+            await digestService.RunAllChannelsAsync(clientProvider, ctx.RequestAborted);
             return Results.Ok();
         }
         catch (Exception ex)
