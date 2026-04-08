@@ -72,8 +72,6 @@ COMMANDS: dict[str, tuple[list[str], int]] = {
     'stop_bot':         (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'stop', 'bot'],     30),
     'restart_bot':      (['docker', 'compose', '-f', f'{PROJ}/docker-compose.yml', 'restart', 'bot'],  30),
     'restart_watchdog': (['systemctl', 'restart', 'daily-news-watchdog'],                              30),
-    'run_digest':       (['curl', '--fail', '--silent', '--show-error', '--max-time', '120',
-                          '-X', 'POST', 'http://localhost:8082/internal/run-digest'],                 130),
     'deploy_bot':       (['bash', f'{PROJ}/deploy-bot.sh'],                                           600),
     'deploy_frontend':  (['bash', f'{PROJ}/deploy-frontend.sh'],                                      600),
     'deploy_watchdog':  (['bash', f'{PROJ}/deploy-watchdog.sh'],                                      300),
@@ -119,8 +117,43 @@ def process_pending(conn: mysql.connector.MySQLConnection) -> None:
         command    = row['command']
         created_by = row.get('created_by', '')
 
-        # Scheduler-eigene run_digest-Einträge werden vom Bot selbst abgearbeitet
-        if command == 'run_digest' and created_by == 'scheduler':
+        # run_digest: Fire-and-forget — Bot verwaltet den Status selbst.
+        # Scheduler-eigene Einträge werden intern vom Bot abgearbeitet.
+        if command == 'run_digest':
+            if created_by == 'scheduler':
+                continue
+            url = f'http://localhost:8082/internal/run-digest?cmdId={cmd_id}'
+            fire_args = ['curl', '--fail', '--silent', '--show-error',
+                         '--max-time', '30', '-X', 'POST', url]
+            log.info(f"'run_digest' auslösen (id={cmd_id})")
+            try:
+                result = subprocess.run(
+                    fire_args, capture_output=True, text=True, timeout=35)
+                if result.returncode == 0:
+                    log.info(
+                        f"'run_digest' ausgelöst (id={cmd_id}) "
+                        f"— Bot übernimmt Status-Update")
+                    # Kein DB-Update hier — Bot markiert done/failed wenn fertig
+                else:
+                    log.error(
+                        f"'run_digest' fehlgeschlagen (Bot nicht erreichbar, "
+                        f"exit={result.returncode}): {result.stderr.strip()} (id={cmd_id})")
+                    cursor.execute(
+                        "UPDATE bot_commands SET status='failed', executed_at=NOW() WHERE id=%s",
+                        (cmd_id,))
+                    conn.commit()
+            except subprocess.TimeoutExpired:
+                log.error(f"'run_digest' Verbindungs-Timeout (id={cmd_id})")
+                cursor.execute(
+                    "UPDATE bot_commands SET status='failed', executed_at=NOW() WHERE id=%s",
+                    (cmd_id,))
+                conn.commit()
+            except Exception as exc:
+                log.error(f"'run_digest' Ausnahme: {exc} (id={cmd_id})")
+                cursor.execute(
+                    "UPDATE bot_commands SET status='failed', executed_at=NOW() WHERE id=%s",
+                    (cmd_id,))
+                conn.commit()
             continue
 
         if command not in COMMANDS:
