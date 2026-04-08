@@ -11,7 +11,9 @@ import sys
 import time
 import subprocess
 import logging
+import json
 from pathlib import Path
+from datetime import datetime, timezone
 
 import mysql.connector
 from dotenv import load_dotenv
@@ -33,11 +35,33 @@ if env_path:
     load_dotenv(env_path)
 
 # Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
+class JsonFormatter(logging.Formatter):
+    LEVEL_MAP = {
+        logging.DEBUG:    'Debug',
+        logging.INFO:     'Information',
+        logging.WARNING:  'Warning',
+        logging.ERROR:    'Error',
+        logging.CRITICAL: 'Critical',
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        ts = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        level = self.LEVEL_MAP.get(record.levelno, 'Information')
+        entry: dict = {
+            '@t': ts.strftime('%Y-%m-%dT%H:%M:%S.') + f'{ts.microsecond // 1000:03d}Z',
+            '@mt': record.getMessage(),
+        }
+        if level != 'Information':
+            entry['@l'] = level
+        if record.exc_info:
+            entry['@x'] = self.formatException(record.exc_info)
+        return json.dumps(entry, ensure_ascii=False)
+
+_handler = logging.StreamHandler(sys.stdout)
+_handler.setFormatter(JsonFormatter())
+logging.root.setLevel(logging.INFO)
+logging.root.handlers.clear()
+logging.root.addHandler(_handler)
 log = logging.getLogger('watchdog')
 
 PROJ = os.environ.get('PROJECT_DIR', '/opt/daily-news')
@@ -122,7 +146,7 @@ def process_pending(conn: mysql.connector.MySQLConnection) -> None:
                 )
         except subprocess.TimeoutExpired:
             status = 'failed'
-            log.error(f"'{command}' Timeout nach 30s (id={cmd_id})")
+            log.error(f"'{command}' Timeout nach {timeout}s (id={cmd_id})")
         except Exception as exc:
             status = 'failed'
             log.error(f"'{command}' Ausnahme: {exc} (id={cmd_id})")

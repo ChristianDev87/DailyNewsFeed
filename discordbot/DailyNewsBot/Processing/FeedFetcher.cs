@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using CodeHollow.FeedReader;
 using DailyNewsBot.Models;
 using Microsoft.Extensions.Http;
@@ -27,6 +29,12 @@ public class FeedFetcher
     {
         try
         {
+            if (await IsPrivateHostAsync(feedConfig.Url))
+            {
+                _logger.LogWarning("SSRF-Block: {Url}", feedConfig.Url);
+                return [];
+            }
+
             var client = _httpClientFactory.CreateClient("feeds");
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
@@ -75,5 +83,46 @@ public class FeedFetcher
         var bytes = System.Security.Cryptography.SHA256.HashData(
             System.Text.Encoding.UTF8.GetBytes(url));
         return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    private static async Task<bool> IsPrivateHostAsync(string url)
+    {
+        try
+        {
+            var host = new Uri(url).Host;
+            if (IPAddress.TryParse(host, out var literal))
+                return IsPrivateAddress(literal);
+            var addresses = await Dns.GetHostAddressesAsync(host);
+            return addresses.Length == 0 || addresses.Any(IsPrivateAddress);
+        }
+        catch
+        {
+            return true; // DNS-Fehler = blockieren
+        }
+    }
+
+    public static bool IsPrivateAddress(IPAddress addr)
+    {
+        if (addr.IsIPv4MappedToIPv6)
+            return IsPrivateAddress(addr.MapToIPv4());
+        if (addr.Equals(IPAddress.IPv6Loopback)) return true;
+        if (addr.AddressFamily != AddressFamily.InterNetwork)
+        {
+            // IPv6: block ULA (fc00::/7) and link-local (fe80::/10)
+            var bytes = addr.GetAddressBytes();
+            if (bytes.Length == 16)
+            {
+                if ((bytes[0] & 0xFE) == 0xFC) return true; // fc00::/7 ULA
+                if (bytes[0] == 0xFE && (bytes[1] & 0xC0) == 0x80) return true; // fe80::/10 link-local
+            }
+            return false;
+        }
+        var b = addr.GetAddressBytes();
+        return b[0] == 0                                       // 0.0.0.0/8 unspecified
+            || b[0] == 127                                     // 127.0.0.0/8 loopback
+            || b[0] == 10                                      // 10.0.0.0/8 private A
+            || (b[0] == 172 && b[1] is >= 16 and <= 31)        // 172.16.0.0/12 private B
+            || (b[0] == 192 && b[1] == 168)                    // 192.168.0.0/16 private C
+            || (b[0] == 169 && b[1] == 254);                   // 169.254.0.0/16 link-local
     }
 }
