@@ -103,6 +103,8 @@ public class FeedFetcher
 
     public static bool IsPrivateAddress(IPAddress addr)
     {
+        if (addr.IsIPv4MappedToIPv6)
+            return IsPrivateAddress(addr.MapToIPv4());
         if (addr.Equals(IPAddress.IPv6Loopback)) return true;
         if (addr.AddressFamily != AddressFamily.InterNetwork)
         {

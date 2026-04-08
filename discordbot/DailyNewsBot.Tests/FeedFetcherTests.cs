@@ -51,4 +51,12 @@ public class FeedFetcherTests
         // 2001:4860:4860::8888 = Google DNS IPv6
         Assert.False(FeedFetcher.IsPrivateAddress(IPAddress.Parse("2001:4860:4860::8888")));
     }
+
+    [Fact]
+    public void IsPrivateAddress_IPv4MappedIPv6Loopback_ReturnsTrue()
+    {
+        // ::ffff:127.0.0.1 — IPv4-mapped form of loopback
+        var mapped = IPAddress.Parse("127.0.0.1").MapToIPv6();
+        Assert.True(FeedFetcher.IsPrivateAddress(mapped));
+    }
 }
