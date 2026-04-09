@@ -36,9 +36,9 @@ $fmtBerlin = static fn (?string $ts): string => $ts
 <div class="bot-panel">
     <h2>Bot-Verwaltung</h2>
     <div class="actions">
-        <button class="btn btn-primary bot-btn" data-cmd="run_digest"  onclick="pollCmd('run_digest',  '.bot-btn', 'bot-msg')">▶ Digest ausführen</button>
+        <button class="btn btn-primary bot-btn" data-cmd="run_digest"  onclick="pollCmd('run_digest',  '.bot-btn', 'bot-msg')">▶️ Nachrichten abrufen</button>
         <button class="btn btn-ghost   bot-btn" data-cmd="restart_bot" onclick="pollCmd('restart_bot', '.bot-btn', 'bot-msg')">🔄 Bot neu starten</button>
-        <button class="btn btn-danger  bot-btn" data-cmd="stop_bot"    onclick="pollCmd('stop_bot',    '.bot-btn', 'bot-msg')">⏹ Bot stoppen</button>
+        <button class="btn btn-danger  bot-btn" data-cmd="stop_bot"    onclick="pollCmd('stop_bot',    '.bot-btn', 'bot-msg')">⏹️ Bot stoppen</button>
     </div>
     <p id="bot-msg" style="margin-top:10px;font-size:14px;text-align:center"></p>
 </div>
@@ -80,7 +80,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
         <tr>
             <td><?= (int)$cmd['id'] ?></td>
             <td><?= match($cmd['command']) {
-                'run_digest'      => '📰 Digest ausführen',
+                'run_digest'      => '📰 Nachrichten abrufen',
                 'deploy_bot'      => '🚀 Bot deployen',
                 'deploy_frontend' => '🚀 Frontend deployen',
                 'restart_bot'     => '🔄 Bot neu starten',
@@ -267,7 +267,7 @@ function refreshAdminData() {
             const tbody = document.getElementById('cmd-tbody');
             if (!tbody) return;
             const statusMap  = { done: '✅ Abgeschlossen', pending: '⏳ Ausstehend', in_progress: '🔄 Läuft', failed: '❌ Fehlgeschlagen' };
-            const commandMap = { run_digest: '📰 Digest ausführen', deploy_bot: '🚀 Bot deployen', deploy_frontend: '🚀 Frontend deployen', restart_bot: '🔄 Bot neu starten', stop_bot: '⏹ Bot stoppen' };
+            const commandMap = { run_digest: '📰 Nachrichten abrufen', deploy_bot: '🚀 Bot deployen', deploy_frontend: '🚀 Frontend deployen', restart_bot: '🔄 Bot neu starten', stop_bot: '⏹ Bot stoppen' };
             const fmtDt = ts => ts
                 ? new Date(ts.replace(' ', 'T') + 'Z').toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
                 : '—';
