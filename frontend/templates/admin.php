@@ -50,7 +50,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
         <button class="btn btn-primary deploy-btn" data-cmd="deploy_frontend" onclick="deployCmd('deploy_frontend')">🚀 Frontend deployen</button>
     </div>
     <p style="font-size:13px;color:var(--muted);margin-top:8px">
-        Führt git pull + docker build + docker up auf dem Server aus (~1–2 Min). Watchdog-Redeploy: SSH nötig.
+        Watchdog-Redeploy benötigt Root-Zugriff per SSH.
     </p>
     <p id="deploy-msg" style="margin-top:10px;font-size:14px"></p>
 </div>
