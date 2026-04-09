@@ -79,8 +79,15 @@ $fmtBerlin = static fn (?string $ts): string => $ts
     <?php foreach ($commands as $cmd): ?>
         <tr>
             <td><?= (int)$cmd['id'] ?></td>
-            <td><code><?= htmlspecialchars($cmd['command'], ENT_QUOTES) ?></code></td>
-            <td><?= $cmd['created_by'] === 'scheduler' ? '🕐 Scheduler' : '👤 Admin' ?></td>
+            <td><?= match($cmd['command']) {
+                'run_digest'      => '📰 Digest ausführen',
+                'deploy_bot'      => '🚀 Bot deployen',
+                'deploy_frontend' => '🚀 Frontend deployen',
+                'restart_bot'     => '🔄 Bot neu starten',
+                'stop_bot'        => '⏹ Bot stoppen',
+                default           => htmlspecialchars($cmd['command'], ENT_QUOTES),
+            } ?></td>
+            <td><?= $cmd['created_by'] === 'scheduler' ? '🕐 Scheduler' : (str_starts_with($cmd['created_by'] ?? '', 'discord:') ? '💬 Discord' : '👤 Admin') ?></td>
             <td>
                 <span class="status-badge status-<?= htmlspecialchars($cmd['status'], ENT_QUOTES) ?>">
                     <?= match($cmd['status']) {
@@ -259,14 +266,16 @@ function refreshAdminData() {
             if (artEl && d.articles_today !== undefined) artEl.textContent = d.articles_today;
             const tbody = document.getElementById('cmd-tbody');
             if (!tbody) return;
-            const statusMap = { done: '✅ Abgeschlossen', pending: '⏳ Ausstehend', in_progress: '🔄 Läuft', failed: '❌ Fehlgeschlagen' };
+            const statusMap  = { done: '✅ Abgeschlossen', pending: '⏳ Ausstehend', in_progress: '🔄 Läuft', failed: '❌ Fehlgeschlagen' };
+            const commandMap = { run_digest: '📰 Digest ausführen', deploy_bot: '🚀 Bot deployen', deploy_frontend: '🚀 Frontend deployen', restart_bot: '🔄 Bot neu starten', stop_bot: '⏹ Bot stoppen' };
             const fmtDt = ts => ts
                 ? new Date(ts.replace(' ', 'T') + 'Z').toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
                 : '—';
+            const fmtCreatedBy = by => by === 'scheduler' ? '🕐 Scheduler' : (by?.startsWith('discord:') ? '💬 Discord' : '👤 Admin');
             tbody.innerHTML = d.commands.map(cmd => `<tr>
                 <td>${cmd.id}</td>
-                <td><code>${cmd.command.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></td>
-                <td>${cmd.created_by === 'scheduler' ? '🕐 Scheduler' : '👤 Admin'}</td>
+                <td>${commandMap[cmd.command] ?? cmd.command}</td>
+                <td>${fmtCreatedBy(cmd.created_by)}</td>
                 <td><span class="status-badge status-${cmd.status}">${statusMap[cmd.status] ?? cmd.status}</span></td>
                 <td>${fmtDt(cmd.created_at)}</td>
                 <td>${fmtDt(cmd.executed_at)}</td>
