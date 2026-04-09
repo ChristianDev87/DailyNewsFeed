@@ -49,10 +49,10 @@ $fmtBerlin = static fn (?string $ts): string => $ts
         <button class="btn btn-primary deploy-btn" data-cmd="deploy_bot"      onclick="deployCmd('deploy_bot')">🚀 Bot deployen</button>
         <button class="btn btn-primary deploy-btn" data-cmd="deploy_frontend" onclick="deployCmd('deploy_frontend')">🚀 Frontend deployen</button>
     </div>
-    <p style="font-size:13px;color:var(--muted);margin-top:8px">
+    <p style="font-size:13px;color:var(--muted);margin-top:8px;text-align:center">
         Watchdog-Redeploy benötigt Root-Zugriff per SSH.
     </p>
-    <p id="deploy-msg" style="margin-top:10px;font-size:14px"></p>
+    <p id="deploy-msg" style="margin-top:10px;font-size:14px;text-align:center"></p>
 </div>
 
 <div style="display:flex;align-items:baseline;gap:12px;margin-top:32px">
