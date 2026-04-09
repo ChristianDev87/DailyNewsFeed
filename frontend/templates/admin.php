@@ -284,12 +284,12 @@ function _selectorForCommand(command) {
 }
 
 function startPoll(cmdId, command, btnSelector, msgId, startedMs) {
-    const btns       = document.querySelectorAll(btnSelector);
+    const allBtns    = document.querySelectorAll('.deploy-btn, .bot-btn');
     const clickedBtn = document.querySelector(`${btnSelector}[data-cmd="${command}"]`);
     const msgEl      = document.getElementById(msgId);
     const origText   = clickedBtn ? clickedBtn.textContent : '';
 
-    btns.forEach(b => { b.disabled = true; });
+    allBtns.forEach(b => { b.disabled = true; });
     if (clickedBtn) clickedBtn.textContent = '⏳ läuft…';
     msgEl.textContent = '';
     refreshAdminData();
@@ -310,7 +310,7 @@ function startPoll(cmdId, command, btnSelector, msgId, startedMs) {
         clearInterval(tickerInterval);
         clearInterval(pollInterval);
         clearTimeout(timeoutHandle);
-        btns.forEach(b => { b.disabled = false; });
+        allBtns.forEach(b => { b.disabled = false; });
         if (clickedBtn) clickedBtn.textContent = origText;
         msgEl.textContent = msg;
     }
@@ -344,12 +344,12 @@ function startPoll(cmdId, command, btnSelector, msgId, startedMs) {
 }
 
 async function pollCmd(command, btnSelector, msgId) {
-    const btns       = document.querySelectorAll(btnSelector);
+    const allBtns    = document.querySelectorAll('.deploy-btn, .bot-btn');
     const clickedBtn = document.querySelector(`${btnSelector}[data-cmd="${command}"]`);
     const msgEl      = document.getElementById(msgId);
     const origText   = clickedBtn.textContent;
 
-    btns.forEach(b => { b.disabled = true; });
+    allBtns.forEach(b => { b.disabled = true; });
     clickedBtn.textContent = '⏳ läuft…';
     msgEl.textContent = '';
 
@@ -363,13 +363,13 @@ async function pollCmd(command, btnSelector, msgId) {
         data = await res.json();
         if (!res.ok || !data.success) {
             msgEl.textContent = `❌ ${data.error ?? 'Befehl fehlgeschlagen'}`;
-            btns.forEach(b => { b.disabled = false; });
+            allBtns.forEach(b => { b.disabled = false; });
             clickedBtn.textContent = origText;
             return;
         }
     } catch (e) {
         msgEl.textContent = `❌ Netzwerkfehler: ${e.message}`;
-        btns.forEach(b => { b.disabled = false; });
+        allBtns.forEach(b => { b.disabled = false; });
         clickedBtn.textContent = origText;
         return;
     }
@@ -377,7 +377,7 @@ async function pollCmd(command, btnSelector, msgId) {
     const cmdId = data.cmdId;
     if (!cmdId) {
         msgEl.textContent = '❌ Kein Command-ID erhalten. Prüfe die Logs.';
-        btns.forEach(b => { b.disabled = false; });
+        allBtns.forEach(b => { b.disabled = false; });
         clickedBtn.textContent = origText;
         return;
     }
