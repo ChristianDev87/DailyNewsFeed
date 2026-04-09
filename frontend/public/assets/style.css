@@ -80,6 +80,7 @@ h2 { font-size: 20px; margin-bottom: 16px; }
     transition: opacity 0.2s;
 }
 .btn:hover     { opacity: 0.85; }
+.btn:disabled  { opacity: 0.45; cursor: not-allowed; filter: grayscale(1); }
 .btn-primary   { background: var(--accent); color: #fff; }
 .btn-discord   { background: #5865f2; color: #fff; }
 .btn-danger    { background: var(--danger); color: #fff; }
