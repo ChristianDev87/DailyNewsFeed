@@ -362,6 +362,14 @@ async function pollCmd(command, btnSelector, msgId) {
         });
         data = await res.json();
         if (!res.ok || !data.success) {
+            if (data.conflict && data.activeCmdId) {
+                // Läuft bereits ein Befehl → nahtlos in dessen Polling überblenden
+                const [activeBtnSelector, activeMsgId] = _selectorForCommand(data.activeCommand);
+                allBtns.forEach(b => { b.disabled = false; });
+                clickedBtn.textContent = origText;
+                startPoll(data.activeCmdId, data.activeCommand, activeBtnSelector, activeMsgId);
+                return;
+            }
             msgEl.textContent = `❌ ${data.error ?? 'Befehl fehlgeschlagen'}`;
             allBtns.forEach(b => { b.disabled = false; });
             clickedBtn.textContent = origText;
