@@ -40,7 +40,7 @@ class AdminLogsAction
             return $this->json($response, ['lines' => [], 'file' => '']);
         }
 
-        $rawLines = $this->tailFile($logFile, $lines);
+        $rawLines = array_reverse($this->tailFile($logFile, $lines));
         $parsed   = ($source === 'frontend')
             ? array_map(fn(string $l) => ['raw' => $l], $rawLines)
             : self::parseJsonLines($rawLines);
