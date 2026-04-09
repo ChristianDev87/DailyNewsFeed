@@ -60,4 +60,55 @@ public class FeedFetcherTests
         var mapped = IPAddress.Parse("127.0.0.1").MapToIPv6();
         Assert.True(FeedFetcher.IsPrivateAddress(mapped));
     }
+
+    // ── NormalizeUrl ────────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("https://example.com/article?utm_source=rss",
+                "https://example.com/article")]
+    [InlineData("https://example.com/article?utm_source=rss&utm_medium=feed&page=2",
+                "https://example.com/article?page=2")]
+    [InlineData("https://example.com/article?page=2&ref=social",
+                "https://example.com/article?page=2")]
+    [InlineData("https://example.com/article?fbclid=abc&gclid=xyz",
+                "https://example.com/article")]
+    [InlineData("https://example.com/article",
+                "https://example.com/article")]
+    public void NormalizeUrl_TrackingParams_AreRemoved(string input, string expected)
+    {
+        Assert.Equal(expected, FeedFetcher.NormalizeUrl(input));
+    }
+
+    [Fact]
+    public void NormalizeUrl_NonTrackingParams_AreKept()
+    {
+        Assert.Equal(
+            "https://example.com/article?id=42&page=3",
+            FeedFetcher.NormalizeUrl("https://example.com/article?id=42&page=3"));
+    }
+
+    [Fact]
+    public void NormalizeUrl_InvalidUrl_ReturnsOriginal()
+    {
+        var invalid = "not a valid url";
+        Assert.Equal(invalid, FeedFetcher.NormalizeUrl(invalid));
+    }
+
+    // ── ComputeUrlHash ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ComputeUrlHash_SameUrlDifferentTrackingParams_ReturnsSameHash()
+    {
+        var hash1 = FeedFetcher.ComputeUrlHash("https://example.com/article?utm_source=twitter");
+        var hash2 = FeedFetcher.ComputeUrlHash("https://example.com/article?fbclid=abc123");
+        Assert.Equal(hash1, hash2);
+    }
+
+    [Fact]
+    public void ComputeUrlHash_DifferentUrls_ReturnsDifferentHash()
+    {
+        var hash1 = FeedFetcher.ComputeUrlHash("https://example.com/article-1");
+        var hash2 = FeedFetcher.ComputeUrlHash("https://example.com/article-2");
+        Assert.NotEqual(hash1, hash2);
+    }
 }
