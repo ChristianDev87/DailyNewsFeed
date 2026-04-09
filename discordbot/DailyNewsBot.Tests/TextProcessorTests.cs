@@ -92,4 +92,45 @@ public class TextProcessorTests
         var result = TextProcessor.ProcessSummary("Text   mit    vielen   Leerzeichen");
         Assert.Equal("Text mit vielen Leerzeichen", result);
     }
+
+    // ── Edge Cases ───────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ProcessSummary_EmptyString_ReturnsEmpty()
+    {
+        Assert.Equal("", TextProcessor.ProcessSummary(""));
+    }
+
+    [Fact]
+    public void ProcessSummary_Whitespace_ReturnsEmpty()
+    {
+        Assert.Equal("", TextProcessor.ProcessSummary("   "));
+    }
+
+    [Fact]
+    public void ProcessSummary_GermanWeiterlesenBei_IsRemoved()
+    {
+        var result = TextProcessor.ProcessSummary("Interessanter Artikel. Weiterlesen bei Heise Online.");
+        Assert.Equal("Interessanter Artikel.", result);
+    }
+
+    [Fact]
+    public void ProcessSummary_ReadMoreAt_IsRemoved()
+    {
+        var result = TextProcessor.ProcessSummary("Great content here. Read more at TechBlog.");
+        Assert.Equal("Great content here.", result);
+    }
+
+    [Fact]
+    public void ProcessSummary_OnlyAttribution_ReturnsEmpty()
+    {
+        var result = TextProcessor.ProcessSummary("Der Artikel Test erschien zuerst auf The Decoder.");
+        Assert.Equal("", result);
+    }
+
+    [Fact]
+    public void ProcessTitle_EmptyString_ReturnsEmpty()
+    {
+        Assert.Equal("", TextProcessor.ProcessTitle(""));
+    }
 }
