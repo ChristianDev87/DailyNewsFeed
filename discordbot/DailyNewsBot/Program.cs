@@ -46,7 +46,7 @@ try
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 14));
 
-    builder.Services.AddSingleton<Database>();
+    builder.Services.AddSingleton<IDatabase, Database>();
     builder.Services.AddHttpClient("feeds", client =>
     {
         client.Timeout = TimeSpan.FromSeconds(15);
@@ -77,7 +77,7 @@ try
     app.MapPost("/internal/run-digest", (
         DigestService digestService,
         IBotClientProvider clientProvider,
-        Database db,
+        IDatabase db,
         IHostApplicationLifetime lifetime,
         long cmdId = 0) =>
     {

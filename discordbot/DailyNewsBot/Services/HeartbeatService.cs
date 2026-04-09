@@ -5,10 +5,10 @@ namespace DailyNewsBot.Services;
 
 public class HeartbeatService : BackgroundService
 {
-    private readonly Database _db;
+    private readonly IDatabase _db;
     private readonly ILogger<HeartbeatService> _logger;
 
-    public HeartbeatService(Database db, ILogger<HeartbeatService> logger)
+    public HeartbeatService(IDatabase db, ILogger<HeartbeatService> logger)
     {
         _db = db;
         _logger = logger;

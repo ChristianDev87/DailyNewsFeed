@@ -10,7 +10,7 @@ namespace DailyNewsBot.Services;
 
 public class DigestService
 {
-    private readonly Database _db;
+    private readonly IDatabase _db;
     private readonly FeedFetcher _feedFetcher;
     private readonly ILogger<DigestService> _logger;
     private readonly int _maxParallelFeeds;
@@ -23,7 +23,7 @@ public class DigestService
 
 
     public DigestService(
-        Database db,
+        IDatabase db,
         FeedFetcher feedFetcher,
         ILogger<DigestService> logger,
         IConfiguration config)

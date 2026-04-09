@@ -1,8 +1,9 @@
+using System.Data.Common;
 using MySqlConnector;
 
 namespace DailyNewsBot.Data;
 
-public class Database
+public class Database : IDatabase
 {
     private readonly string _connectionString;
 
@@ -25,7 +26,7 @@ public class Database
 
     // Opens a connection and immediately runs SET time_zone = '+00:00' so that
     // NOW() always returns UTC regardless of the server's system timezone.
-    public async Task<MySqlConnection> GetOpenConnectionAsync(CancellationToken ct = default)
+    public async Task<DbConnection> GetOpenConnectionAsync(CancellationToken ct = default)
     {
         var conn = GetConnection();
         await conn.OpenAsync(ct);
