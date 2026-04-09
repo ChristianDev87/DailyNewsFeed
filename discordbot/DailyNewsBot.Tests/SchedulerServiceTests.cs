@@ -52,4 +52,31 @@ public class SchedulerServiceTests
         Assert.Equal(12, next.Hour);
         Assert.True(nextUtc > nowUtc);
     }
+
+    [Fact]
+    public void GetNextRunTime_ResultIsAlwaysUtcKind()
+    {
+        // Rückgabewert muss DateTimeKind.Utc sein — sonst schlägt Task.Delay fehl
+        var nowUtc = BerlinToUtc(2026, 3, 15, 9, 0);
+        var result = SchedulerService.GetNextRunTime(nowUtc);
+
+        Assert.Equal(DateTimeKind.Utc, result.Kind);
+    }
+
+    [Theory]
+    [InlineData(2026, 1, 16,  0, 30)]
+    [InlineData(2026, 1, 16,  7, 59)]
+    [InlineData(2026, 1, 16, 13, 15)]
+    [InlineData(2026, 1, 16, 23, 59)]
+    [InlineData(2026, 7, 15, 18,  0)]  // Sommerzeit
+    public void GetNextRunTime_ResultHourIsAlways4HourBlock(
+        int year, int month, int day, int hour, int minute)
+    {
+        // Ergebnis-Stunde (Berlin) muss immer 0, 4, 8, 12, 16 oder 20 sein
+        var nowUtc  = BerlinToUtc(year, month, day, hour, minute);
+        var nextUtc = SchedulerService.GetNextRunTime(nowUtc);
+        var next    = UtcToBerlin(nextUtc);
+
+        Assert.Contains(next.Hour, new[] { 0, 4, 8, 12, 16, 20 });
+    }
 }
