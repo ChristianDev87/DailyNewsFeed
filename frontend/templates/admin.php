@@ -28,7 +28,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
         <div class="stat-label">Artikel heute</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value"><?= (int)($stats['pending_commands'] ?? 0) ?></div>
+        <div class="stat-value" id="stat-pending"><?= (int)($stats['pending_commands'] ?? 0) ?></div>
         <div class="stat-label">Ausstehende Befehle</div>
     </div>
 </div>
@@ -75,7 +75,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
             <th>Ausgeführt</th>
         </tr>
     </thead>
-    <tbody>
+    <tbody id="cmd-tbody">
     <?php foreach ($commands as $cmd): ?>
         <tr>
             <td><?= (int)$cmd['id'] ?></td>
@@ -261,6 +261,31 @@ async function botCmd(command, msgId = 'bot-msg') {
     if (res.ok) setTimeout(() => location.reload(), 2000);
 }
 
+function refreshAdminData() {
+    fetch('/api/admin/commands')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+            if (!d) return;
+            const statEl = document.getElementById('stat-pending');
+            if (statEl) statEl.textContent = d.pending_count;
+            const tbody = document.getElementById('cmd-tbody');
+            if (!tbody) return;
+            const statusMap = { done: '✅ done', pending: '⏳ pending', in_progress: '🔄 in_progress', failed: '❌ failed' };
+            const fmtDt = ts => ts
+                ? new Date(ts.replace(' ', 'T') + 'Z').toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
+                : '—';
+            tbody.innerHTML = d.commands.map(cmd => `<tr>
+                <td>${cmd.id}</td>
+                <td><code>${cmd.command.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></td>
+                <td>${cmd.created_by === 'scheduler' ? '🕐 Scheduler' : '👤 Admin'}</td>
+                <td><span class="status-badge status-${cmd.status}">${statusMap[cmd.status] ?? cmd.status}</span></td>
+                <td>${fmtDt(cmd.created_at)}</td>
+                <td>${fmtDt(cmd.executed_at)}</td>
+            </tr>`).join('');
+        })
+        .catch(() => {});
+}
+
 async function deployCmd(command) {
     const deployBtns = document.querySelectorAll('.deploy-btn');
     const clickedBtn = document.querySelector(`.deploy-btn[data-cmd="${command}"]`);
@@ -292,6 +317,8 @@ async function deployCmd(command) {
         clickedBtn.textContent = origText;
         return;
     }
+
+    refreshAdminData();
 
     const cmdId = data.cmdId;
     if (!cmdId) {
@@ -333,6 +360,7 @@ async function deployCmd(command) {
             }
             const d = await res.json();
             consecutive = 0;
+            refreshAdminData();
             if (d.status === 'done') {
                 finish('✅ Deploy abgeschlossen. Seite wird neu geladen…');
                 setTimeout(() => location.reload(), 1500);
