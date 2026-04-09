@@ -91,6 +91,8 @@ public class DigestService
 
         await tx.CommitAsync(ct);
 
+        _logger.LogInformation("Kanal {ChannelId}: {SeenCount} bereits gesehene Artikel in DB", channelId, seenHashes.Count);
+
         // Kategorien ermitteln
         var categories = await GetCategoriesForChannelAsync(channelId, ct);
 

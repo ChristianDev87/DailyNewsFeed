@@ -44,6 +44,7 @@ public class FeedFetcher
 
             var articles = new List<ProcessedArticle>();
             var count = 0;
+            var skippedSeen = 0;
 
             foreach (var item in feed.Items)
             {
@@ -53,7 +54,7 @@ public class FeedFetcher
                 if (string.IsNullOrWhiteSpace(url)) continue;
 
                 var urlHash = ComputeUrlHash(url);
-                if (seenHashes.Contains(urlHash)) continue;
+                if (seenHashes.Contains(urlHash)) { skippedSeen++; continue; }
 
                 var title   = TextProcessor.ProcessTitle(item.Title ?? "");
                 var summary = TextProcessor.ProcessSummary(item.Description ?? item.Content ?? "");
@@ -63,6 +64,9 @@ public class FeedFetcher
                 articles.Add(new ProcessedArticle(title, url, summary, urlHash, feedConfig.Name));
                 count++;
             }
+
+            _logger.LogInformation("Feed {Name}: {Total} Items, {New} neu, {Seen} bereits gesehen",
+                feedConfig.Name, feed.Items.Count(), articles.Count, skippedSeen);
 
             return articles;
         }
