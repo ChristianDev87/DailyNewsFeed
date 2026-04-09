@@ -68,4 +68,52 @@ public class ChunkBuilderTests
         Assert.Contains("Teil A", combined);
         Assert.Contains("https://link.de", combined);
     }
+
+    // ── Edge Cases ───────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void BuildChunks_EmptyString_ReturnsEmptyList()
+    {
+        Assert.Empty(ChunkBuilder.BuildChunks(""));
+    }
+
+    [Fact]
+    public void BuildChunks_WhitespaceOnly_ReturnsEmptyList()
+    {
+        Assert.Empty(ChunkBuilder.BuildChunks("   \n  \n  "));
+    }
+
+    [Fact]
+    public void BuildChunks_ExactlyAtMaxSize_ReturnsSingleChunk()
+    {
+        // Exakt 1900 Zeichen → kein Split (Bedingung ist strictly greater than)
+        var text = string.Concat(Enumerable.Repeat("a", 1900));
+        Assert.Single(ChunkBuilder.BuildChunks(text));
+    }
+
+    [Fact]
+    public void BuildChunks_CategoryHeaderUsedAsSplitPoint()
+    {
+        // Kategorie-Header nach ~950 Zeichen, danach noch 1000 Zeichen → Split vor 🤖
+        var part1 = string.Concat(Enumerable.Repeat("x", 950));
+        var part2 = "\n🤖 KI-News\n────────\n" + string.Concat(Enumerable.Repeat("y", 1000));
+        var text   = part1 + part2;
+
+        var chunks = ChunkBuilder.BuildChunks(text);
+
+        Assert.True(chunks.Count >= 2);
+        Assert.StartsWith("🤖", chunks[1]);
+    }
+
+    [Fact]
+    public void BuildChunks_ProducesThreeChunks_AllWithinLimit()
+    {
+        // ~6000 Zeichen mit Leerzeichen zum Spliten
+        var text = string.Concat(Enumerable.Repeat("wort ", 1200));
+
+        var chunks = ChunkBuilder.BuildChunks(text);
+
+        Assert.True(chunks.Count >= 3);
+        Assert.All(chunks, c => Assert.True(c.Length <= 1900));
+    }
 }

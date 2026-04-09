@@ -7,7 +7,7 @@ public class SchedulerService : BackgroundService
 {
     private readonly DigestService _digestService;
     private readonly IBotClientProvider _clientProvider;
-    private readonly Database _db;
+    private readonly IDatabase _db;
     private readonly ILogger<SchedulerService> _logger;
 
     public DateTime NextRunTime { get; private set; }
@@ -15,7 +15,7 @@ public class SchedulerService : BackgroundService
     public SchedulerService(
         DigestService digestService,
         IBotClientProvider clientProvider,
-        Database db,
+        IDatabase db,
         ILogger<SchedulerService> logger)
     {
         _digestService = digestService;
@@ -87,10 +87,10 @@ public class SchedulerService : BackgroundService
     private static readonly TimeZoneInfo _tz =
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
-    private static DateTime GetNextRunTime()
+    internal static DateTime GetNextRunTime(DateTime? nowUtc = null)
     {
-        var nowUtc   = DateTime.UtcNow;
-        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, _tz);
+        var utcNow   = nowUtc ?? DateTime.UtcNow;
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(utcNow, _tz);
 
         var currentBlock = nowLocal.Hour - (nowLocal.Hour % 4);
         var nextLocal    = nowLocal.Date.AddHours(currentBlock + 4);

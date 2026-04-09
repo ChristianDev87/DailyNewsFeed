@@ -10,7 +10,7 @@ namespace DailyNewsBot.Services;
 
 public class DigestService
 {
-    private readonly Database _db;
+    private readonly IDatabase _db;
     private readonly FeedFetcher _feedFetcher;
     private readonly ILogger<DigestService> _logger;
     private readonly int _maxParallelFeeds;
@@ -23,7 +23,7 @@ public class DigestService
 
 
     public DigestService(
-        Database db,
+        IDatabase db,
         FeedFetcher feedFetcher,
         ILogger<DigestService> logger,
         IConfiguration config)
@@ -146,7 +146,7 @@ public class DigestService
         }
 
         // Nachricht aufbauen und senden
-        var text = BuildDigestText(allNew);
+        var text = BuildDigestText(allNew, NowBerlin());
         var chunks = ChunkBuilder.BuildChunks(text);
 
         var threadChannel = await restClient.GetChannelAsync(threadId) as ITextChannel;
@@ -173,10 +173,11 @@ public class DigestService
             channelId, newArticles.Count);
     }
 
-    private string BuildDigestText(
-        List<(CategoryData Category, List<ProcessedArticle> Articles)> articlesByCategory)
+    internal static string BuildDigestText(
+        List<(CategoryData Category, List<ProcessedArticle> Articles)> articlesByCategory,
+        DateTime berlinNow)
     {
-        var now = NowBerlin();
+        var now = berlinNow;
 
         if (!articlesByCategory.Any())
         {
