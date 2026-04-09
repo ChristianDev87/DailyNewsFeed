@@ -36,8 +36,8 @@ $fmtBerlin = static fn (?string $ts): string => $ts
 <div class="bot-panel">
     <h2>Bot-Verwaltung</h2>
     <div class="actions">
-        <button class="btn btn-neutral bot-btn" data-cmd="run_digest"  onclick="pollCmd('run_digest',  '.bot-btn', 'bot-msg')">▶️ Nachrichten abrufen</button>
         <?php if ($botOnline): ?>
+        <button class="btn btn-neutral bot-btn" data-cmd="run_digest"  onclick="pollCmd('run_digest',  '.bot-btn', 'bot-msg')">▶️ Nachrichten abrufen</button>
         <button class="btn btn-neutral bot-btn" data-cmd="restart_bot" onclick="pollCmd('restart_bot', '.bot-btn', 'bot-msg')">🔄 Bot neu starten</button>
         <button class="btn btn-danger  bot-btn" data-cmd="stop_bot"    onclick="pollCmd('stop_bot',    '.bot-btn', 'bot-msg')">⏹️ Bot stoppen</button>
         <?php else: ?>
