@@ -258,8 +258,7 @@ async function botCmd(command, msgId = 'bot-msg') {
     });
     const data = await res.json();
     msgEl.textContent = data.message ?? (data.success ? 'Befehl gesendet.' : `Fehler: ${data.error}`);
-    const noreload = ['deploy_bot', 'deploy_frontend'];
-    if (res.ok && !noreload.includes(command)) setTimeout(() => location.reload(), 2000);
+    if (res.ok) setTimeout(() => location.reload(), 2000);
 }
 
 async function deployCmd(command) {
@@ -294,7 +293,13 @@ async function deployCmd(command) {
         return;
     }
 
-    const cmdId    = data.cmdId;
+    const cmdId = data.cmdId;
+    if (!cmdId) {
+        msgEl.textContent = '❌ Kein Command-ID erhalten. Prüfe die Logs.';
+        deployBtns.forEach(b => { b.disabled = false; });
+        clickedBtn.textContent = origText;
+        return;
+    }
     const started  = Date.now();
     const maxMs    = 10 * 60 * 1000; // 10 minutes
     let consecutive = 0;
@@ -315,11 +320,9 @@ async function deployCmd(command) {
         msgEl.textContent = msg;
     }
 
+    setTimeout(() => finish('⚠️ Deploy dauert ungewöhnlich lange. Prüfe die Logs.'), maxMs);
+
     pollInterval = setInterval(async () => {
-        if (Date.now() - started >= maxMs) {
-            finish('⚠️ Deploy dauert ungewöhnlich lange. Prüfe die Logs.');
-            return;
-        }
         try {
             const res = await fetch(`/api/bot/command/${cmdId}/status`);
             if (!res.ok) {
@@ -330,9 +333,7 @@ async function deployCmd(command) {
             const d = await res.json();
             consecutive = 0;
             if (d.status === 'done') {
-                clearInterval(tickerInterval);
-                clearInterval(pollInterval);
-                msgEl.textContent = '✅ Deploy abgeschlossen. Seite wird neu geladen…';
+                finish('✅ Deploy abgeschlossen. Seite wird neu geladen…');
                 setTimeout(() => location.reload(), 1500);
             } else if (d.status === 'failed') {
                 finish('❌ Deploy fehlgeschlagen. Prüfe die Logs.');
