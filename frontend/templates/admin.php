@@ -210,8 +210,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
                     <td style="font-size:13px;word-break:break-word">${esc(l.message)}${l.exception ? `<br><span style="color:var(--danger);font-size:11px">${esc(l.exception)}</span>` : ''}</td>
                    </tr>`
             ).join('');
-            const c = document.getElementById('log-container');
-            c.scrollTop = c.scrollHeight;
+            document.getElementById('log-container').scrollTop = 0;
         } catch (e) {
             tbody.innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Fehler: ${esc(e.message)}</td></tr>`;
         }
