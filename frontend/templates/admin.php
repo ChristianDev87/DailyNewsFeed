@@ -36,9 +36,9 @@ $fmtBerlin = static fn (?string $ts): string => $ts
 <div class="bot-panel">
     <h2>Bot-Verwaltung</h2>
     <div class="actions">
-        <button class="btn btn-primary" onclick="botCmd('run_digest')">▶ Digest ausführen</button>
-        <button class="btn btn-ghost"   onclick="botCmd('restart_bot')">🔄 Bot neu starten</button>
-        <button class="btn btn-danger"  onclick="botCmd('stop_bot')">⏹ Bot stoppen</button>
+        <button class="btn btn-primary bot-btn" data-cmd="run_digest"  onclick="pollCmd('run_digest',  '.bot-btn', 'bot-msg')">▶ Digest ausführen</button>
+        <button class="btn btn-ghost   bot-btn" data-cmd="restart_bot" onclick="pollCmd('restart_bot', '.bot-btn', 'bot-msg')">🔄 Bot neu starten</button>
+        <button class="btn btn-danger  bot-btn" data-cmd="stop_bot"    onclick="pollCmd('stop_bot',    '.bot-btn', 'bot-msg')">⏹ Bot stoppen</button>
     </div>
     <p id="bot-msg" style="margin-top:10px;font-size:14px"></p>
 </div>
@@ -46,8 +46,8 @@ $fmtBerlin = static fn (?string $ts): string => $ts
 <div class="bot-panel" style="margin-top:24px">
     <h2>Deployment</h2>
     <div class="actions">
-        <button class="btn btn-primary deploy-btn" data-cmd="deploy_bot"      onclick="deployCmd('deploy_bot')">🚀 Bot deployen</button>
-        <button class="btn btn-primary deploy-btn" data-cmd="deploy_frontend" onclick="deployCmd('deploy_frontend')">🚀 Frontend deployen</button>
+        <button class="btn btn-primary deploy-btn" data-cmd="deploy_bot"      onclick="pollCmd('deploy_bot',      '.deploy-btn', 'deploy-msg')">🚀 Bot deployen</button>
+        <button class="btn btn-primary deploy-btn" data-cmd="deploy_frontend" onclick="pollCmd('deploy_frontend', '.deploy-btn', 'deploy-msg')">🚀 Frontend deployen</button>
     </div>
     <p style="font-size:13px;color:var(--muted);margin-top:8px;text-align:center">
         Watchdog-Redeploy benötigt Root-Zugriff per SSH.
@@ -247,19 +247,6 @@ function changePerPage(val) {
     window.location.href = url.toString();
 }
 
-async function botCmd(command, msgId = 'bot-msg') {
-    const msgEl = document.getElementById(msgId);
-    msgEl.textContent = 'Sende…';
-    const res  = await fetch('/api/bot/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>' },
-        body: JSON.stringify({ command }),
-    });
-    const data = await res.json();
-    msgEl.textContent = data.message ?? (data.success ? 'Befehl gesendet.' : `Fehler: ${data.error}`);
-    if (res.ok) setTimeout(() => location.reload(), 2000);
-}
-
 function refreshAdminData() {
     fetch('/api/admin/commands')
         .then(r => r.ok ? r.json() : null)
@@ -285,17 +272,16 @@ function refreshAdminData() {
         .catch(() => {});
 }
 
-async function deployCmd(command) {
-    const deployBtns = document.querySelectorAll('.deploy-btn');
-    const clickedBtn = document.querySelector(`.deploy-btn[data-cmd="${command}"]`);
-    const msgEl      = document.getElementById('deploy-msg');
+async function pollCmd(command, btnSelector, msgId) {
+    const btns       = document.querySelectorAll(btnSelector);
+    const clickedBtn = document.querySelector(`${btnSelector}[data-cmd="${command}"]`);
+    const msgEl      = document.getElementById(msgId);
     const origText   = clickedBtn.textContent;
 
-    deployBtns.forEach(b => { b.disabled = true; });
+    btns.forEach(b => { b.disabled = true; });
     clickedBtn.textContent = '⏳ läuft…';
     msgEl.textContent = '';
 
-    // Send the command
     let data;
     try {
         const res = await fetch('/api/bot/command', {
@@ -306,13 +292,13 @@ async function deployCmd(command) {
         data = await res.json();
         if (!res.ok || !data.success) {
             msgEl.textContent = `❌ ${data.error ?? 'Befehl fehlgeschlagen'}`;
-            deployBtns.forEach(b => { b.disabled = false; });
+            btns.forEach(b => { b.disabled = false; });
             clickedBtn.textContent = origText;
             return;
         }
     } catch (e) {
         msgEl.textContent = `❌ Netzwerkfehler: ${e.message}`;
-        deployBtns.forEach(b => { b.disabled = false; });
+        btns.forEach(b => { b.disabled = false; });
         clickedBtn.textContent = origText;
         return;
     }
@@ -322,12 +308,13 @@ async function deployCmd(command) {
     const cmdId = data.cmdId;
     if (!cmdId) {
         msgEl.textContent = '❌ Kein Command-ID erhalten. Prüfe die Logs.';
-        deployBtns.forEach(b => { b.disabled = false; });
+        btns.forEach(b => { b.disabled = false; });
         clickedBtn.textContent = origText;
         return;
     }
-    const started  = Date.now();
-    const maxMs    = 10 * 60 * 1000; // 10 minutes
+
+    const started = Date.now();
+    const maxMs   = 10 * 60 * 1000;
     let consecutive = 0;
     let tickerInterval, pollInterval, timeoutHandle;
 
@@ -335,19 +322,19 @@ async function deployCmd(command) {
         const elapsed = Math.floor((Date.now() - started) / 1000);
         const mins    = Math.floor(elapsed / 60);
         const secs    = String(elapsed % 60).padStart(2, '0');
-        msgEl.textContent = `⏳ Deploy läuft… ${mins}:${secs} min`;
+        msgEl.textContent = `⏳ läuft… ${mins}:${secs} min`;
     }, 1000);
 
     function finish(msg) {
         clearInterval(tickerInterval);
         clearInterval(pollInterval);
         clearTimeout(timeoutHandle);
-        deployBtns.forEach(b => { b.disabled = false; });
+        btns.forEach(b => { b.disabled = false; });
         clickedBtn.textContent = origText;
         msgEl.textContent = msg;
     }
 
-    timeoutHandle = setTimeout(() => finish('⚠️ Deploy dauert ungewöhnlich lange. Prüfe die Logs.'), maxMs);
+    timeoutHandle = setTimeout(() => finish('⚠️ Befehl dauert ungewöhnlich lange. Prüfe die Logs.'), maxMs);
 
     pollInterval = setInterval(async () => {
         try {
@@ -361,10 +348,10 @@ async function deployCmd(command) {
             consecutive = 0;
             refreshAdminData();
             if (d.status === 'done') {
-                finish('✅ Deploy abgeschlossen. Seite wird neu geladen…');
+                finish('✅ Abgeschlossen. Seite wird neu geladen…');
                 setTimeout(() => location.reload(), 1500);
             } else if (d.status === 'failed') {
-                finish('❌ Deploy fehlgeschlagen. Prüfe die Logs.');
+                finish('❌ Fehlgeschlagen. Prüfe die Logs.');
             }
             // 'pending' and 'in_progress' → keep polling
         } catch (_) {
