@@ -27,7 +27,8 @@ public class SchedulerService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("SchedulerService gestartet. Nächster Lauf: {NextRun:HH:mm} UTC", NextRunTime);
+        _logger.LogInformation("SchedulerService gestartet. Nächster Lauf: {NextRun}",
+            TimeZoneInfo.ConvertTimeFromUtc(NextRunTime, _tz).ToString("dd.MM.yyyy HH:mm") + " Uhr (Berlin)");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -40,7 +41,8 @@ public class SchedulerService : BackgroundService
             await TryRunDigestAsync(stoppingToken);
 
             NextRunTime = GetNextRunTime();
-            _logger.LogInformation("Nächster Scheduler-Lauf: {NextRun:HH:mm} UTC", NextRunTime);
+            _logger.LogInformation("Nächster Scheduler-Lauf: {NextRun}",
+                TimeZoneInfo.ConvertTimeFromUtc(NextRunTime, _tz).ToString("dd.MM.yyyy HH:mm") + " Uhr (Berlin)");
         }
     }
 
