@@ -207,7 +207,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
                 : `<tr>
                     <td style="white-space:nowrap;font-size:12px">${esc(fmtTs(l.timestamp))}</td>
                     <td><span class="status-badge ${lvlClass(l.level)}">${esc(l.level)}</span></td>
-                    <td style="font-size:13px;word-break:break-word">${esc(l.message)}</td>
+                    <td style="font-size:13px;word-break:break-word">${esc(l.message)}${l.exception ? `<br><span style="color:var(--danger);font-size:11px">${esc(l.exception)}</span>` : ''}</td>
                    </tr>`
             ).join('');
             const c = document.getElementById('log-container');
