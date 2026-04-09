@@ -11,7 +11,7 @@ namespace DailyNewsBot.Services;
 
 public class BotService : BackgroundService, IBotClientProvider
 {
-    private readonly Database _db;
+    private readonly IDatabase _db;
     private readonly ILogger<BotService> _logger;
     private readonly string _botToken;
     private readonly string _masterKey;
@@ -25,7 +25,7 @@ public class BotService : BackgroundService, IBotClientProvider
     public DiscordSocketClient SocketClient => _socketClient;
 
     public BotService(
-        Database db,
+        IDatabase db,
         DigestService digestService,
         ILogger<BotService> logger,
         IConfiguration config)
