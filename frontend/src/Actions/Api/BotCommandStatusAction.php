@@ -19,6 +19,9 @@ class BotCommandStatusAction
         }
 
         $id  = (int)($args['id'] ?? 0);
+        if ($id <= 0) {
+            return $this->json($response, ['error' => 'Ungültige ID'], 400);
+        }
         $row = $this->db->fetchOne('SELECT status FROM bot_commands WHERE id = ?', [$id]);
 
         if ($row === null) {
