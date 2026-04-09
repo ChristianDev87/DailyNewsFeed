@@ -78,10 +78,46 @@ public class FeedFetcher
         }
     }
 
+    private static readonly HashSet<string> _trackingParams = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Google Analytics / Ads
+        "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
+        "gclid", "gclsrc", "dclid",
+        // Social / Ad networks
+        "fbclid", "msclkid", "twclid", "li_fat_id", "igshid",
+        // Email marketing
+        "mc_cid", "mc_eid", "mkt_tok", "_hsenc", "_hsmi", "nr_email_referer",
+        // Generic referral / source tracking
+        "ref", "referrer", "source", "via", "cmp", "cmpid",
+        // Feed / publisher specific
+        "ftag", "xtor", "s_cid",
+    };
+
+    /// <summary>
+    /// Normalisiert eine URL für Deduplication: entfernt Tracking-Parameter und Fragment.
+    /// Der angezeigte/gespeicherte URL bleibt der Original-URL.
+    /// </summary>
+    private static string NormalizeUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return url;
+
+        if (string.IsNullOrEmpty(uri.Query))
+            return $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}";
+
+        var kept = uri.Query.TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Where(p => !_trackingParams.Contains(p.Split('=')[0]))
+            .ToArray();
+
+        var qs = kept.Length > 0 ? "?" + string.Join("&", kept) : "";
+        return $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}{qs}";
+    }
+
     private static string ComputeUrlHash(string url)
     {
         var bytes = System.Security.Cryptography.SHA256.HashData(
-            System.Text.Encoding.UTF8.GetBytes(url));
+            System.Text.Encoding.UTF8.GetBytes(NormalizeUrl(url)));
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
