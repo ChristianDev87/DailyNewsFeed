@@ -272,6 +272,73 @@ function refreshAdminData() {
         .catch(() => {});
 }
 
+const _deployCommands = ['deploy_bot', 'deploy_frontend'];
+
+function _selectorForCommand(command) {
+    return _deployCommands.includes(command)
+        ? ['.deploy-btn', 'deploy-msg']
+        : ['.bot-btn',    'bot-msg'];
+}
+
+function startPoll(cmdId, command, btnSelector, msgId, startedMs) {
+    const btns       = document.querySelectorAll(btnSelector);
+    const clickedBtn = document.querySelector(`${btnSelector}[data-cmd="${command}"]`);
+    const msgEl      = document.getElementById(msgId);
+    const origText   = clickedBtn ? clickedBtn.textContent : '';
+
+    btns.forEach(b => { b.disabled = true; });
+    if (clickedBtn) clickedBtn.textContent = '⏳ läuft…';
+    msgEl.textContent = '';
+
+    const started = startedMs ?? Date.now();
+    const maxMs   = 10 * 60 * 1000;
+    let consecutive = 0;
+    let tickerInterval, pollInterval, timeoutHandle;
+
+    tickerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - started) / 1000);
+        const mins    = Math.floor(elapsed / 60);
+        const secs    = String(elapsed % 60).padStart(2, '0');
+        msgEl.textContent = `⏳ läuft… ${mins}:${secs} min`;
+    }, 1000);
+
+    function finish(msg) {
+        clearInterval(tickerInterval);
+        clearInterval(pollInterval);
+        clearTimeout(timeoutHandle);
+        btns.forEach(b => { b.disabled = false; });
+        if (clickedBtn) clickedBtn.textContent = origText;
+        msgEl.textContent = msg;
+    }
+
+    const remaining = Math.max(0, maxMs - (Date.now() - started));
+    timeoutHandle = setTimeout(() => finish('⚠️ Befehl dauert ungewöhnlich lange. Prüfe die Logs.'), remaining);
+
+    pollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/api/bot/command/${cmdId}/status`);
+            if (!res.ok) {
+                consecutive++;
+                if (consecutive >= 10) finish('⚠️ Server nicht erreichbar. Prüfe die Logs.');
+                return;
+            }
+            const d = await res.json();
+            consecutive = 0;
+            refreshAdminData();
+            if (d.status === 'done') {
+                finish('✅ Abgeschlossen. Seite wird neu geladen…');
+                setTimeout(() => location.reload(), 1500);
+            } else if (d.status === 'failed') {
+                finish('❌ Fehlgeschlagen. Prüfe die Logs.');
+            }
+            // 'pending' and 'in_progress' → keep polling
+        } catch (_) {
+            consecutive++;
+            if (consecutive >= 10) finish('⚠️ Server nicht erreichbar. Prüfe die Logs.');
+        }
+    }, 3000);
+}
+
 async function pollCmd(command, btnSelector, msgId) {
     const btns       = document.querySelectorAll(btnSelector);
     const clickedBtn = document.querySelector(`${btnSelector}[data-cmd="${command}"]`);
@@ -313,51 +380,21 @@ async function pollCmd(command, btnSelector, msgId) {
         return;
     }
 
-    const started = Date.now();
-    const maxMs   = 10 * 60 * 1000;
-    let consecutive = 0;
-    let tickerInterval, pollInterval, timeoutHandle;
-
-    tickerInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - started) / 1000);
-        const mins    = Math.floor(elapsed / 60);
-        const secs    = String(elapsed % 60).padStart(2, '0');
-        msgEl.textContent = `⏳ läuft… ${mins}:${secs} min`;
-    }, 1000);
-
-    function finish(msg) {
-        clearInterval(tickerInterval);
-        clearInterval(pollInterval);
-        clearTimeout(timeoutHandle);
-        btns.forEach(b => { b.disabled = false; });
-        clickedBtn.textContent = origText;
-        msgEl.textContent = msg;
-    }
-
-    timeoutHandle = setTimeout(() => finish('⚠️ Befehl dauert ungewöhnlich lange. Prüfe die Logs.'), maxMs);
-
-    pollInterval = setInterval(async () => {
-        try {
-            const res = await fetch(`/api/bot/command/${cmdId}/status`);
-            if (!res.ok) {
-                consecutive++;
-                if (consecutive >= 10) finish('⚠️ Server nicht erreichbar. Prüfe die Logs.');
-                return;
-            }
-            const d = await res.json();
-            consecutive = 0;
-            refreshAdminData();
-            if (d.status === 'done') {
-                finish('✅ Abgeschlossen. Seite wird neu geladen…');
-                setTimeout(() => location.reload(), 1500);
-            } else if (d.status === 'failed') {
-                finish('❌ Fehlgeschlagen. Prüfe die Logs.');
-            }
-            // 'pending' and 'in_progress' → keep polling
-        } catch (_) {
-            consecutive++;
-            if (consecutive >= 10) finish('⚠️ Server nicht erreichbar. Prüfe die Logs.');
-        }
-    }, 3000);
+    startPoll(cmdId, command, btnSelector, msgId);
 }
+
+// Beim Laden: laufenden Befehl wiederherstellen (z.B. nach F5)
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/admin/commands')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+            if (!d) return;
+            const active = d.commands.find(c => c.status === 'pending' || c.status === 'in_progress');
+            if (!active) return;
+            const [btnSelector, msgId] = _selectorForCommand(active.command);
+            const startedMs = new Date(active.created_at.replace(' ', 'T') + 'Z').getTime();
+            startPoll(active.id, active.command, btnSelector, msgId, startedMs);
+        })
+        .catch(() => {});
+});
 </script>
