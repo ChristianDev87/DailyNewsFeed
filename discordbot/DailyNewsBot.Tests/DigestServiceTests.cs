@@ -102,4 +102,44 @@ public class DigestServiceTests
 
         Assert.DoesNotContain("\n\n\n", result);
     }
+
+    // ── BuildHeaderText ───────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(2,  "📰 **News-Digest")]   // first run of day (0–4h)
+    [InlineData(14, "🔄 **Update")]        // later run
+    public void BuildHeaderText_ReturnsCorrectHeaderForHour(int hour, string expectedStart)
+    {
+        var result = DigestService.BuildHeaderText(new DateTime(2026, 4, 9, hour, 0, 0));
+        Assert.StartsWith(expectedStart, result);
+    }
+
+    // ── BuildCategoryText ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void BuildCategoryText_ContainsEmojiLabelAndArticle()
+    {
+        var cat = new CategoryData("Technologie", "💻", []);
+        var articles = new List<ProcessedArticle>
+        {
+            new("Test Titel", "https://example.com/1", "Summary", "hash1", "TestFeed")
+        };
+        var result = DigestService.BuildCategoryText(cat, articles);
+        Assert.Contains("💻 Technologie", result);
+        Assert.Contains("🔹 **Test Titel**", result);
+        Assert.Contains("<https://example.com/1>", result);
+        Assert.Contains("Summary", result);
+    }
+
+    [Fact]
+    public void BuildCategoryText_ArticleWithoutSummary_NoTripleNewline()
+    {
+        var cat = new CategoryData("Tech", "💻", []);
+        var articles = new List<ProcessedArticle>
+        {
+            new("Test Titel", "https://example.com/1", "", "hash1", "TestFeed")
+        };
+        var result = DigestService.BuildCategoryText(cat, articles);
+        Assert.DoesNotContain("\n\n\n", result);
+    }
 }

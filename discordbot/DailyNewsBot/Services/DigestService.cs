@@ -215,6 +215,30 @@ public class DigestService
     public static bool IsFirstRunToday(DateTime berlinNow) =>
         berlinNow.Hour is >= 0 and < 4;
 
+    internal static string BuildHeaderText(DateTime berlinNow) =>
+        IsFirstRunToday(berlinNow)
+            ? $"📰 **News-Digest — {berlinNow:dd.MM.yyyy}**"
+            : $"🔄 **Update — {berlinNow:HH:mm} Uhr**";
+
+    internal static string BuildCategoryText(CategoryData cat, List<ProcessedArticle> articles)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"{cat.Emoji} {cat.Label}");
+        sb.AppendLine("────────────────────────────────");
+        sb.AppendLine();
+
+        foreach (var article in articles)
+        {
+            sb.AppendLine($"🔹 **{article.Title}**");
+            if (!string.IsNullOrWhiteSpace(article.Summary))
+                sb.AppendLine(article.Summary);
+            sb.AppendLine($"<{article.Url}>");
+            sb.AppendLine();
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
     private async Task<ulong> GetOrCreateThreadAsync(
         string channelId, DiscordRestClient restClient, CancellationToken ct)
     {
