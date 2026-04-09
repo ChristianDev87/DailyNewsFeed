@@ -40,7 +40,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
         <button class="btn btn-ghost   bot-btn" data-cmd="restart_bot" onclick="pollCmd('restart_bot', '.bot-btn', 'bot-msg')">🔄 Bot neu starten</button>
         <button class="btn btn-danger  bot-btn" data-cmd="stop_bot"    onclick="pollCmd('stop_bot',    '.bot-btn', 'bot-msg')">⏹ Bot stoppen</button>
     </div>
-    <p id="bot-msg" style="margin-top:10px;font-size:14px"></p>
+    <p id="bot-msg" style="margin-top:10px;font-size:14px;text-align:center"></p>
 </div>
 
 <div class="bot-panel" style="margin-top:24px">
