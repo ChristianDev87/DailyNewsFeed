@@ -52,8 +52,9 @@ class BotCommandAction
             'success' => true,
             'cmdId'   => $cmdId,
             'message' => match ($command) {
+                'start_bot'       => 'Start-Befehl gesendet.',
                 'restart_bot'     => 'Neustart-Befehl gesendet.',
-                'run_digest'      => 'Digest wird ausgeführt.',
+                'run_digest'      => 'Nachrichten werden abgerufen.',
                 'stop_bot'        => 'Stop-Befehl gesendet.',
                 'deploy_bot'      => 'Bot-Deploy gesendet — läuft im Hintergrund (~1–2 Min).',
                 'deploy_frontend' => 'Frontend-Deploy gesendet — läuft im Hintergrund (~1–2 Min).',

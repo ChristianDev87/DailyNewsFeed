@@ -84,6 +84,7 @@ h2 { font-size: 20px; margin-bottom: 16px; }
 .btn-primary   { background: var(--accent); color: #fff; }
 .btn-discord   { background: #5865f2; color: #fff; }
 .btn-danger    { background: var(--danger); color: #fff; }
+.btn-neutral   { background: var(--surface2); color: #fff; }
 .btn-ghost     { background: transparent; border: 1px solid var(--border); color: var(--text); }
 
 /* Inputs */
