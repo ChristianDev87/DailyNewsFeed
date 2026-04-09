@@ -84,10 +84,11 @@ $fmtBerlin = static fn (?string $ts): string => $ts
             <td>
                 <span class="status-badge status-<?= htmlspecialchars($cmd['status'], ENT_QUOTES) ?>">
                     <?= match($cmd['status']) {
-                        'done'    => '✅ done',
-                        'pending' => '⏳ pending',
-                        'failed'  => '❌ failed',
-                        default   => htmlspecialchars($cmd['status'], ENT_QUOTES),
+                        'done'        => '✅ done',
+                        'pending'     => '⏳ pending',
+                        'in_progress' => '🔄 in_progress',
+                        'failed'      => '❌ failed',
+                        default       => htmlspecialchars($cmd['status'], ENT_QUOTES),
                     } ?>
                 </span>
             </td>
@@ -289,6 +290,7 @@ function startPoll(cmdId, command, btnSelector, msgId, startedMs) {
     btns.forEach(b => { b.disabled = true; });
     if (clickedBtn) clickedBtn.textContent = '⏳ läuft…';
     msgEl.textContent = '';
+    refreshAdminData();
 
     const started = startedMs ?? Date.now();
     const maxMs   = 10 * 60 * 1000;
@@ -369,8 +371,6 @@ async function pollCmd(command, btnSelector, msgId) {
         clickedBtn.textContent = origText;
         return;
     }
-
-    refreshAdminData();
 
     const cmdId = data.cmdId;
     if (!cmdId) {
