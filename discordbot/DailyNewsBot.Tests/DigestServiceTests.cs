@@ -19,87 +19,57 @@ public class DigestServiceTests
         Assert.Equal(expected, DigestService.IsFirstRunToday(berlinNow));
     }
 
-    // ── BuildDigestText ──────────────────────────────────────────────────────────
+    // ── BuildHeaderText ───────────────────────────────────────────────────────
 
-    [Fact]
-    public void BuildDigestText_NoArticles_ContainsNoNewArticlesMessage()
+    [Theory]
+    [InlineData(0,  "📰 **News-Digest")]   // Mitternacht — erster Lauf
+    [InlineData(2,  "📰 **News-Digest")]   // mitten im ersten Lauf
+    [InlineData(3,  "📰 **News-Digest")]   // letzter erster Lauf
+    [InlineData(4,  "🔄 **Update")]        // erster späterer Lauf
+    [InlineData(14, "🔄 **Update")]        // Mittag
+    public void BuildHeaderText_ReturnsCorrectHeaderForHour(int hour, string expectedStart)
     {
-        var result = DigestService.BuildDigestText([], new DateTime(2026, 4, 9, 10, 0, 0));
-        Assert.Contains("Keine neuen Artikel", result);
+        var result = DigestService.BuildHeaderText(new DateTime(2026, 4, 9, hour, 0, 0));
+        Assert.StartsWith(expectedStart, result);
     }
 
+    // ── BuildCategoryText ─────────────────────────────────────────────────────
+
     [Fact]
-    public void BuildDigestText_FirstRunOfDay_UsesNewsDigestHeader()
+    public void BuildCategoryText_ContainsEmojiLabelAndArticle()
     {
-        // 02:00 Uhr liegt in IsFirstRunToday (0–4h)
-        var berlinNow = new DateTime(2026, 4, 9, 2, 0, 0);
-        var articles  = new List<ProcessedArticle>
+        var cat = new CategoryData("Technologie", "💻", []);
+        var articles = new List<ProcessedArticle>
         {
             new("Test Titel", "https://example.com/1", "Summary", "hash1", "TestFeed")
         };
-        var categories = new List<(CategoryData, List<ProcessedArticle>)>
-        {
-            (new CategoryData("Technologie", "💻", []), articles)
-        };
-
-        var result = DigestService.BuildDigestText(categories, berlinNow);
-
-        Assert.StartsWith("📰 **News-Digest", result);
-    }
-
-    [Fact]
-    public void BuildDigestText_LaterRun_UsesUpdateHeader()
-    {
-        // 14:00 Uhr ist kein erster Lauf
-        var berlinNow = new DateTime(2026, 4, 9, 14, 0, 0);
-        var articles  = new List<ProcessedArticle>
-        {
-            new("Test Titel", "https://example.com/1", "Summary", "hash1", "TestFeed")
-        };
-        var categories = new List<(CategoryData, List<ProcessedArticle>)>
-        {
-            (new CategoryData("Technologie", "💻", []), articles)
-        };
-
-        var result = DigestService.BuildDigestText(categories, berlinNow);
-
-        Assert.StartsWith("🔄 **Update", result);
-    }
-
-    [Fact]
-    public void BuildDigestText_ArticleWithSummary_IncludesSummaryAndUrl()
-    {
-        var berlinNow = new DateTime(2026, 4, 9, 10, 0, 0);
-        var articles  = new List<ProcessedArticle>
-        {
-            new("Test Titel", "https://example.com/1", "Das ist eine Zusammenfassung", "hash1", "TestFeed")
-        };
-        var categories = new List<(CategoryData, List<ProcessedArticle>)>
-        {
-            (new CategoryData("Technologie", "💻", []), articles)
-        };
-
-        var result = DigestService.BuildDigestText(categories, berlinNow);
-
-        Assert.Contains("Das ist eine Zusammenfassung", result);
+        var result = DigestService.BuildCategoryText(cat, articles);
+        Assert.Contains("💻 Technologie", result);
+        Assert.Contains("🔹 **Test Titel**", result);
         Assert.Contains("<https://example.com/1>", result);
+        Assert.Contains("Summary", result);
     }
 
     [Fact]
-    public void BuildDigestText_ArticleWithoutSummary_NoTripleNewline()
+    public void BuildCategoryText_ArticleWithoutSummary_NoTripleNewline()
     {
-        var berlinNow = new DateTime(2026, 4, 9, 10, 0, 0);
-        var articles  = new List<ProcessedArticle>
+        var cat = new CategoryData("Tech", "💻", []);
+        var articles = new List<ProcessedArticle>
         {
             new("Test Titel", "https://example.com/1", "", "hash1", "TestFeed")
         };
-        var categories = new List<(CategoryData, List<ProcessedArticle>)>
-        {
-            (new CategoryData("Tech", "💻", []), articles)
-        };
-
-        var result = DigestService.BuildDigestText(categories, berlinNow);
-
+        var result = DigestService.BuildCategoryText(cat, articles);
         Assert.DoesNotContain("\n\n\n", result);
+    }
+
+    // In der Praxis wird BuildCategoryText nur mit nicht-leeren Listen aufgerufen
+    // (gefiltert durch allNew in RunSingleChannelAsync). Test dokumentiert das Verhalten der Methode selbst.
+    [Fact]
+    public void BuildCategoryText_EmptyArticleList_ContainsOnlyHeader()
+    {
+        var cat = new CategoryData("Tech", "💻", []);
+        var result = DigestService.BuildCategoryText(cat, []);
+        Assert.Contains("💻 Tech", result);
+        Assert.DoesNotContain("🔹", result);
     }
 }

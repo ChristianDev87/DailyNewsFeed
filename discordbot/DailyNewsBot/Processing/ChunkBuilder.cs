@@ -46,29 +46,22 @@ public static class ChunkBuilder
         var pos = window.LastIndexOf("\n🔹", StringComparison.Ordinal);
         if (pos > MaxChunkSize / 3) return pos;
 
-        // Priorität 2: Vor Kategorie-Header
-        foreach (var marker in new[] { "\n🤖", "\n💻", "\n🛠", "\n🎮" })
-        {
-            pos = window.LastIndexOf(marker, StringComparison.Ordinal);
-            if (pos > MaxChunkSize / 3) return pos;
-        }
-
-        // Priorität 3: Doppelte Leerzeile
+        // Priorität 2: Doppelte Leerzeile
         pos = window.LastIndexOf("\n\n", StringComparison.Ordinal);
         if (pos > MaxChunkSize / 3) return pos;
 
-        // Priorität 4: Einfache Leerzeile
+        // Priorität 3: Einfache Leerzeile
         pos = window.LastIndexOf('\n');
         if (pos > MaxChunkSize / 3) return pos;
 
-        // Priorität 5: Satzende
+        // Priorität 4: Satzende
         foreach (var sep in new[] { ". ", "! ", "? " })
         {
             pos = window.LastIndexOf(sep, StringComparison.Ordinal);
             if (pos > MaxChunkSize / 3) return pos + 1;
         }
 
-        // Priorität 6: Leerzeichen (Notfall)
+        // Priorität 5: Leerzeichen (Notfall)
         pos = window.LastIndexOf(' ');
         if (pos > MaxChunkSize / 3) return pos;
 

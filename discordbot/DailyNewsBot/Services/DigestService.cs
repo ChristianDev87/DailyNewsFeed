@@ -14,9 +14,14 @@ public class DigestService
     private readonly FeedFetcher _feedFetcher;
     private readonly ILogger<DigestService> _logger;
     private readonly int _maxParallelFeeds;
+    private readonly TimeSpan _categoryDelay;
+    private readonly TimeSpan _channelDelay;
 
     private static readonly TimeZoneInfo _tz =
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+
+    // Feste Pause zwischen Chunks einer Kategorie — Discord Rate-Limit-Schutz, kein Konfigurations-Knopf.
+    private static readonly TimeSpan InterChunkDelay = TimeSpan.FromSeconds(2);
 
     private static DateTime NowBerlin() =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _tz);
@@ -31,7 +36,11 @@ public class DigestService
         _db = db;
         _feedFetcher = feedFetcher;
         _logger = logger;
-        _maxParallelFeeds = int.TryParse(config["MAX_PARALLEL_FEEDS"], out var n) ? n : 10;
+        _maxParallelFeeds = int.TryParse(config["MAX_PARALLEL_FEEDS"], out var n) ? Math.Max(1, n) : 10;
+        var catSec  = int.TryParse(config["CATEGORY_SEND_DELAY_SECONDS"], out var c)  ? c  : 2;
+        _categoryDelay = TimeSpan.FromSeconds(Math.Max(2, catSec));
+        var chanSec = int.TryParse(config["CHANNEL_SEND_DELAY_SECONDS"],  out var ch) ? ch : 5;
+        _channelDelay  = TimeSpan.FromSeconds(Math.Max(5, chanSec));
     }
 
     /// <summary>
@@ -57,7 +66,7 @@ public class DigestService
             }
 
             if (i < channelIds.Count - 1)
-                await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                await Task.Delay(_channelDelay, ct);
         }
     }
 
@@ -69,9 +78,8 @@ public class DigestService
         IBotClientProvider clientProvider,
         CancellationToken ct)
     {
-        // Pessimistischer Lock auf Kanal-Ebene
         await using var conn = await _db.GetOpenConnectionAsync(ct);
-        await using var tx = await conn.BeginTransactionAsync(ct);
+        await using var tx   = await conn.BeginTransactionAsync(ct);
 
         var channel = await conn.QueryFirstOrDefaultAsync<Channel>(
             "SELECT * FROM channels WHERE channel_id = @channelId AND active = 1 FOR UPDATE",
@@ -84,7 +92,6 @@ public class DigestService
             return;
         }
 
-        // Bereits gesehene Artikel laden
         var seenHashes = (await conn.QueryAsync<string>(
             "SELECT url_hash FROM seen_articles WHERE channel_id = @channelId",
             new { channelId }, tx)).ToHashSet();
@@ -93,7 +100,6 @@ public class DigestService
 
         _logger.LogInformation("Kanal {ChannelId}: {SeenCount} bereits gesehene Artikel in DB", channelId, seenHashes.Count);
 
-        // Kategorien ermitteln
         var categories = await GetCategoriesForChannelAsync(channelId, ct);
 
         if (!categories.Any())
@@ -102,8 +108,6 @@ public class DigestService
             return;
         }
 
-        // Feeds parallel holen
-        var newArticlesByCategory = new List<(CategoryData Category, List<ProcessedArticle> Articles)>();
         var seenHashesLock = new object();
         using var sem = new SemaphoreSlim(_maxParallelFeeds);
 
@@ -132,22 +136,22 @@ public class DigestService
         });
 
         var results = await Task.WhenAll(tasks);
+        var allNew  = results.Where(r => r.catArticles.Any()).ToList();
 
-        var allNew = results.Where(r => r.catArticles.Any()).ToList();
+        if (!allNew.Any())
+        {
+            _logger.LogInformation("Kanal {ChannelId}: keine neuen Artikel — stiller Lauf", channelId);
+            return;
+        }
 
-        // Thread holen oder erstellen
-        var restClient = clientProvider.GetRestClientForChannel(channelId);
-        var threadId = await GetOrCreateThreadAsync(channelId, restClient, ct);
+        var restClient  = clientProvider.GetRestClientForChannel(channelId);
+        var threadId    = await GetOrCreateThreadAsync(channelId, restClient, ct);
 
         if (threadId == 0)
         {
             _logger.LogError("Thread für Kanal {ChannelId} konnte nicht erstellt werden", channelId);
             return;
         }
-
-        // Nachricht aufbauen und senden
-        var text = BuildDigestText(allNew, NowBerlin());
-        var chunks = ChunkBuilder.BuildChunks(text);
 
         var threadChannel = await restClient.GetChannelAsync(threadId) as ITextChannel;
         if (threadChannel is null)
@@ -156,64 +160,59 @@ public class DigestService
             return;
         }
 
-        for (int i = 0; i < chunks.Count; i++)
-        {
-            await SendWithRateLimitAsync(threadChannel, chunks[i], ct);
-            if (i < chunks.Count - 1)
-                await Task.Delay(TimeSpan.FromSeconds(2), ct);
-        }
+        await SendWithRateLimitAsync(threadChannel, BuildHeaderText(NowBerlin()), ct);
 
-        // Neue Artikel in seen_articles speichern (Bulk)
-        var newArticles = results.SelectMany(r => r.catArticles).ToList();
-        if (newArticles.Any())
-            await BulkInsertSeenArticlesAsync(newArticles, channelId);
+        int totalSent = 0;
+        for (int i = 0; i < allNew.Count; i++)
+        {
+            var (cat, catArticles) = allNew[i];
+            var chunks = ChunkBuilder.BuildChunks(BuildCategoryText(cat, catArticles));
+
+            for (int j = 0; j < chunks.Count; j++)
+            {
+                await SendWithRateLimitAsync(threadChannel, chunks[j], ct);
+                if (j < chunks.Count - 1)
+                    await Task.Delay(InterChunkDelay, ct);
+            }
+
+            await BulkInsertSeenArticlesAsync(catArticles, channelId, ct);
+            totalSent += catArticles.Count;
+
+            if (i < allNew.Count - 1)
+                await Task.Delay(_categoryDelay, ct);
+        }
 
         _logger.LogInformation(
             "Digest für Kanal {ChannelId}: {Count} neue Artikel gesendet",
-            channelId, newArticles.Count);
-    }
-
-    internal static string BuildDigestText(
-        List<(CategoryData Category, List<ProcessedArticle> Articles)> articlesByCategory,
-        DateTime berlinNow)
-    {
-        var now = berlinNow;
-
-        if (!articlesByCategory.Any())
-        {
-            return $"🔄 **Update — {now:HH:mm} Uhr**\n" +
-                   "✅ Keine neuen Artikel seit dem letzten Durchlauf.";
-        }
-
-        var sb = new StringBuilder();
-
-        if (IsFirstRunToday(now))
-            sb.AppendLine($"📰 **News-Digest — {now:dd.MM.yyyy}**");
-        else
-            sb.AppendLine($"🔄 **Update — {now:HH:mm} Uhr**");
-
-        foreach (var (category, articles) in articlesByCategory)
-        {
-            sb.AppendLine();
-            sb.AppendLine($"{category.Emoji} {category.Label}");
-            sb.AppendLine("────────────────────────────────");
-            sb.AppendLine();
-
-            foreach (var article in articles)
-            {
-                sb.AppendLine($"🔹 **{article.Title}**");
-                if (!string.IsNullOrWhiteSpace(article.Summary))
-                    sb.AppendLine(article.Summary);
-                sb.AppendLine($"<{article.Url}>");
-                sb.AppendLine();
-            }
-        }
-
-        return sb.ToString().TrimEnd();
+            channelId, totalSent);
     }
 
     public static bool IsFirstRunToday(DateTime berlinNow) =>
         berlinNow.Hour is >= 0 and < 4;
+
+    internal static string BuildHeaderText(DateTime berlinNow) =>
+        IsFirstRunToday(berlinNow)
+            ? $"📰 **News-Digest — {berlinNow:dd.MM.yyyy}**"
+            : $"🔄 **Update — {berlinNow:HH:mm} Uhr**";
+
+    internal static string BuildCategoryText(CategoryData cat, List<ProcessedArticle> articles)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"{cat.Emoji} {cat.Label}");
+        sb.AppendLine("────────────────────────────────");
+        sb.AppendLine();
+
+        foreach (var article in articles)
+        {
+            sb.AppendLine($"🔹 **{article.Title}**");
+            if (!string.IsNullOrWhiteSpace(article.Summary))
+                sb.AppendLine(article.Summary);
+            sb.AppendLine($"<{article.Url}>");
+            sb.AppendLine();
+        }
+
+        return sb.ToString().TrimEnd();
+    }
 
     private async Task<ulong> GetOrCreateThreadAsync(
         string channelId, DiscordRestClient restClient, CancellationToken ct)
@@ -311,11 +310,11 @@ public class DigestService
         return result;
     }
 
-    private async Task BulkInsertSeenArticlesAsync(List<ProcessedArticle> articles, string channelId)
+    private async Task BulkInsertSeenArticlesAsync(List<ProcessedArticle> articles, string channelId, CancellationToken ct = default)
     {
         if (!articles.Any()) return;
 
-        await using var conn = await _db.GetOpenConnectionAsync();
+        await using var conn = await _db.GetOpenConnectionAsync(ct);
 
         await conn.ExecuteAsync(
             "INSERT IGNORE INTO seen_articles (url_hash, channel_id, url, title, source, seen_at) " +
