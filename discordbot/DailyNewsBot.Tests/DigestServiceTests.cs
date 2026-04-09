@@ -106,8 +106,11 @@ public class DigestServiceTests
     // ── BuildHeaderText ───────────────────────────────────────────────────────
 
     [Theory]
-    [InlineData(2,  "📰 **News-Digest")]   // first run of day (0–4h)
-    [InlineData(14, "🔄 **Update")]        // later run
+    [InlineData(0,  "📰 **News-Digest")]   // Mitternacht — erster Lauf
+    [InlineData(2,  "📰 **News-Digest")]   // mitten im ersten Lauf
+    [InlineData(3,  "📰 **News-Digest")]   // letzter erster Lauf
+    [InlineData(4,  "🔄 **Update")]        // erster späterer Lauf
+    [InlineData(14, "🔄 **Update")]        // Mittag
     public void BuildHeaderText_ReturnsCorrectHeaderForHour(int hour, string expectedStart)
     {
         var result = DigestService.BuildHeaderText(new DateTime(2026, 4, 9, hour, 0, 0));
@@ -141,5 +144,14 @@ public class DigestServiceTests
         };
         var result = DigestService.BuildCategoryText(cat, articles);
         Assert.DoesNotContain("\n\n\n", result);
+    }
+
+    [Fact]
+    public void BuildCategoryText_EmptyArticleList_ContainsOnlyHeader()
+    {
+        var cat = new CategoryData("Tech", "💻", []);
+        var result = DigestService.BuildCategoryText(cat, []);
+        Assert.Contains("💻 Tech", result);
+        Assert.DoesNotContain("🔹", result);
     }
 }
