@@ -214,9 +214,10 @@ input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 .data-table th { color: var(--muted); font-weight: 600; }
 
 .status-badge { font-size: 13px; }
-.status-badge.status-done    { color: var(--success); }
-.status-badge.status-pending { color: var(--warning, #f6ad55); }
-.status-badge.status-failed  { color: var(--danger); }
+.status-badge.status-done        { color: var(--success); }
+.status-badge.status-pending     { color: var(--warning, #f6ad55); }
+.status-badge.status-failed      { color: var(--danger); }
+.status-badge.status-in_progress { color: #5865f2; }
 
 /* Bot status in nav */
 .bot-status {
