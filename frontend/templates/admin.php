@@ -50,8 +50,8 @@ $fmtBerlin = static fn (?string $ts): string => $ts
 <div class="bot-panel" style="margin-top:24px">
     <h2>Deployment</h2>
     <div class="actions">
-        <button class="btn btn-primary deploy-btn" data-cmd="deploy_bot"      onclick="pollCmd('deploy_bot',      '.deploy-btn', 'deploy-msg')">🚀 Bot deployen</button>
-        <button class="btn btn-primary deploy-btn" data-cmd="deploy_frontend" onclick="pollCmd('deploy_frontend', '.deploy-btn', 'deploy-msg')">🚀 Frontend deployen</button>
+        <button class="btn btn-neutral deploy-btn" data-cmd="deploy_bot"      onclick="pollCmd('deploy_bot',      '.deploy-btn', 'deploy-msg')">🚀 Bot deployen</button>
+        <button class="btn btn-neutral deploy-btn" data-cmd="deploy_frontend" onclick="pollCmd('deploy_frontend', '.deploy-btn', 'deploy-msg')">🚀 Frontend deployen</button>
     </div>
     <p style="font-size:13px;color:var(--muted);margin-top:8px;text-align:center">
         Watchdog-Redeploy benötigt Root-Zugriff per SSH.
