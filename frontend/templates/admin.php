@@ -84,10 +84,10 @@ $fmtBerlin = static fn (?string $ts): string => $ts
             <td>
                 <span class="status-badge status-<?= htmlspecialchars($cmd['status'], ENT_QUOTES) ?>">
                     <?= match($cmd['status']) {
-                        'done'        => '✅ done',
-                        'pending'     => '⏳ pending',
-                        'in_progress' => '🔄 in_progress',
-                        'failed'      => '❌ failed',
+                        'done'        => '✅ Abgeschlossen',
+                        'pending'     => '⏳ Ausstehend',
+                        'in_progress' => '🔄 Läuft',
+                        'failed'      => '❌ Fehlgeschlagen',
                         default       => htmlspecialchars($cmd['status'], ENT_QUOTES),
                     } ?>
                 </span>
@@ -259,7 +259,7 @@ function refreshAdminData() {
             if (artEl && d.articles_today !== undefined) artEl.textContent = d.articles_today;
             const tbody = document.getElementById('cmd-tbody');
             if (!tbody) return;
-            const statusMap = { done: '✅ done', pending: '⏳ pending', in_progress: '🔄 in_progress', failed: '❌ failed' };
+            const statusMap = { done: '✅ Abgeschlossen', pending: '⏳ Ausstehend', in_progress: '🔄 Läuft', failed: '❌ Fehlgeschlagen' };
             const fmtDt = ts => ts
                 ? new Date(ts.replace(' ', 'T') + 'Z').toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
                 : '—';
@@ -335,7 +335,7 @@ function startPoll(cmdId, command, btnSelector, msgId, startedMs) {
             } else if (d.status === 'failed') {
                 finish('❌ Fehlgeschlagen. Prüfe die Logs.');
             }
-            // 'pending' and 'in_progress' → keep polling
+            // 'pending' und 'in_progress' → weiter pollen
         } catch (_) {
             consecutive++;
             if (consecutive >= 10) finish('⚠️ Server nicht erreichbar. Prüfe die Logs.');
