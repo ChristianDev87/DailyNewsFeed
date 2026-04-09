@@ -84,7 +84,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
                 'deploy_bot'      => '🚀 Bot deployen',
                 'deploy_frontend' => '🚀 Frontend deployen',
                 'restart_bot'     => '🔄 Bot neu starten',
-                'stop_bot'        => '⏹ Bot stoppen',
+                'stop_bot'        => '⏹️ Bot stoppen',
                 default           => htmlspecialchars($cmd['command'], ENT_QUOTES),
             } ?></td>
             <td><?= $cmd['created_by'] === 'scheduler' ? '🕐 Scheduler' : (str_starts_with($cmd['created_by'] ?? '', 'discord:') ? '💬 Discord' : '👤 Admin') ?></td>
@@ -267,7 +267,7 @@ function refreshAdminData() {
             const tbody = document.getElementById('cmd-tbody');
             if (!tbody) return;
             const statusMap  = { done: '✅ Abgeschlossen', pending: '⏳ Ausstehend', in_progress: '🔄 Läuft', failed: '❌ Fehlgeschlagen' };
-            const commandMap = { run_digest: '📰 Nachrichten abrufen', deploy_bot: '🚀 Bot deployen', deploy_frontend: '🚀 Frontend deployen', restart_bot: '🔄 Bot neu starten', stop_bot: '⏹ Bot stoppen' };
+            const commandMap = { run_digest: '📰 Nachrichten abrufen', deploy_bot: '🚀 Bot deployen', deploy_frontend: '🚀 Frontend deployen', restart_bot: '🔄 Bot neu starten', stop_bot: '⏹️ Bot stoppen' };
             const fmtDt = ts => ts
                 ? new Date(ts.replace(' ', 'T') + 'Z').toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
                 : '—';
