@@ -28,6 +28,19 @@ class BotCommandAction
             return $this->json($response, ['success' => false, 'error' => 'Unbekannter Befehl'], 400);
         }
 
+        $running = $this->db->fetchOne(
+            'SELECT id, command FROM bot_commands WHERE status IN ("pending", "in_progress") ORDER BY id DESC LIMIT 1'
+        );
+
+        if ($running) {
+            return $this->json($response, [
+                'success'       => false,
+                'conflict'      => true,
+                'activeCmdId'   => (int)$running['id'],
+                'activeCommand' => $running['command'],
+            ], 409);
+        }
+
         $this->db->execute(
             'INSERT INTO bot_commands (command, status, created_by, created_at) VALUES (?, ?, ?, NOW())',
             [$command, 'pending', $session['discord_user_id']]
