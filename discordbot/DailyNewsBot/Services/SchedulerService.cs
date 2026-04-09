@@ -87,10 +87,10 @@ public class SchedulerService : BackgroundService
     private static readonly TimeZoneInfo _tz =
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
-    private static DateTime GetNextRunTime()
+    internal static DateTime GetNextRunTime(DateTime? nowUtc = null)
     {
-        var nowUtc   = DateTime.UtcNow;
-        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, _tz);
+        var utcNow   = nowUtc ?? DateTime.UtcNow;
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(utcNow, _tz);
 
         var currentBlock = nowLocal.Hour - (nowLocal.Hour % 4);
         var nextLocal    = nowLocal.Date.AddHours(currentBlock + 4);

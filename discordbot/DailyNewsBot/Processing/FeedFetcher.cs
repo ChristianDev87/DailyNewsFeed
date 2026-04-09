@@ -101,7 +101,7 @@ public class FeedFetcher
     /// Normalisiert eine URL für Deduplication: entfernt Tracking-Parameter und Fragment.
     /// Der angezeigte/gespeicherte URL bleibt der Original-URL.
     /// </summary>
-    private static string NormalizeUrl(string url)
+    internal static string NormalizeUrl(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
             return url;
@@ -118,7 +118,7 @@ public class FeedFetcher
         return $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}{qs}";
     }
 
-    private static string ComputeUrlHash(string url)
+    internal static string ComputeUrlHash(string url)
     {
         var bytes = System.Security.Cryptography.SHA256.HashData(
             System.Text.Encoding.UTF8.GetBytes(NormalizeUrl(url)));

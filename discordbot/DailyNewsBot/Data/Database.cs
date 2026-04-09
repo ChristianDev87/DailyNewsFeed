@@ -22,7 +22,7 @@ public class Database : IDatabase
             $"MaximumPoolSize={pool};AllowZeroDateTime=True;ConvertZeroDateTime=True;";
     }
 
-    public MySqlConnection GetConnection() => new(_connectionString);
+    private MySqlConnection GetConnection() => new(_connectionString);
 
     // Opens a connection and immediately runs SET time_zone = '+00:00' so that
     // NOW() always returns UTC regardless of the server's system timezone.
