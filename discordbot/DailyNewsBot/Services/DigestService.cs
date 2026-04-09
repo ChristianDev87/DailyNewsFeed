@@ -20,6 +20,7 @@ public class DigestService
     private static readonly TimeZoneInfo _tz =
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
+    // Feste Pause zwischen Chunks einer Kategorie — Discord Rate-Limit-Schutz, kein Konfigurations-Knopf.
     private static readonly TimeSpan InterChunkDelay = TimeSpan.FromSeconds(2);
 
     private static DateTime NowBerlin() =>
@@ -174,7 +175,7 @@ public class DigestService
                     await Task.Delay(InterChunkDelay, ct);
             }
 
-            await BulkInsertSeenArticlesAsync(catArticles, channelId);
+            await BulkInsertSeenArticlesAsync(catArticles, channelId, ct);
             totalSent += catArticles.Count;
 
             if (i < allNew.Count - 1)
@@ -309,11 +310,11 @@ public class DigestService
         return result;
     }
 
-    private async Task BulkInsertSeenArticlesAsync(List<ProcessedArticle> articles, string channelId)
+    private async Task BulkInsertSeenArticlesAsync(List<ProcessedArticle> articles, string channelId, CancellationToken ct = default)
     {
         if (!articles.Any()) return;
 
-        await using var conn = await _db.GetOpenConnectionAsync();
+        await using var conn = await _db.GetOpenConnectionAsync(ct);
 
         await conn.ExecuteAsync(
             "INSERT IGNORE INTO seen_articles (url_hash, channel_id, url, title, source, seen_at) " +

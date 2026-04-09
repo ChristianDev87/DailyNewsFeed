@@ -62,6 +62,8 @@ public class DigestServiceTests
         Assert.DoesNotContain("\n\n\n", result);
     }
 
+    // In der Praxis wird BuildCategoryText nur mit nicht-leeren Listen aufgerufen
+    // (gefiltert durch allNew in RunSingleChannelAsync). Test dokumentiert das Verhalten der Methode selbst.
     [Fact]
     public void BuildCategoryText_EmptyArticleList_ContainsOnlyHeader()
     {
