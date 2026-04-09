@@ -103,12 +103,15 @@ class AdminLogsAction
             if (!is_array($data)) {
                 return ['raw' => $line];
             }
-            $template = $data['@mt'] ?? $line;
-            $message  = $data['@m'] ?? self::renderTemplate($template, $data);
+            $template  = $data['@mt'] ?? $line;
+            $message   = $data['@m'] ?? self::renderTemplate($template, $data);
+            // @x enthält die Exception — erste Zeile zeigt Typ + Message, Rest ist Stack Trace
+            $exception = isset($data['@x']) ? explode("\n", $data['@x'])[0] : null;
             return [
                 'timestamp' => $data['@t'] ?? '',
                 'level'     => $data['@l'] ?? 'Information',
                 'message'   => $message,
+                'exception' => $exception,
             ];
         }, $rawLines);
     }
