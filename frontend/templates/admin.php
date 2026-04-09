@@ -303,7 +303,7 @@ async function deployCmd(command) {
     const started  = Date.now();
     const maxMs    = 10 * 60 * 1000; // 10 minutes
     let consecutive = 0;
-    let tickerInterval, pollInterval;
+    let tickerInterval, pollInterval, timeoutHandle;
 
     tickerInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - started) / 1000);
@@ -315,12 +315,13 @@ async function deployCmd(command) {
     function finish(msg) {
         clearInterval(tickerInterval);
         clearInterval(pollInterval);
+        clearTimeout(timeoutHandle);
         deployBtns.forEach(b => { b.disabled = false; });
         clickedBtn.textContent = origText;
         msgEl.textContent = msg;
     }
 
-    setTimeout(() => finish('⚠️ Deploy dauert ungewöhnlich lange. Prüfe die Logs.'), maxMs);
+    timeoutHandle = setTimeout(() => finish('⚠️ Deploy dauert ungewöhnlich lange. Prüfe die Logs.'), maxMs);
 
     pollInterval = setInterval(async () => {
         try {
