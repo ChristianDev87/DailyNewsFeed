@@ -126,6 +126,20 @@ public static class DNewsCommands
             return;
         }
 
+        var running = await conn.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM bot_commands WHERE status IN ('pending', 'in_progress')");
+
+        if (running > 0)
+        {
+            await cmd.RespondAsync("⏳ Ein Befehl läuft bereits. Bitte warten bis er abgeschlossen ist.", ephemeral: true);
+            return;
+        }
+
+        var cmdId = await conn.ExecuteScalarAsync<long>(
+            "INSERT INTO bot_commands (command, status, created_by, created_at) " +
+            "VALUES ('run_digest', 'in_progress', @createdBy, NOW()); SELECT LAST_INSERT_ID()",
+            new { createdBy = $"discord:{cmd.User.Id}" });
+
         await cmd.DeferAsync();
 
         var status = "done";
@@ -142,9 +156,8 @@ public static class DNewsCommands
         finally
         {
             await conn.ExecuteAsync(
-                "INSERT INTO bot_commands (command, status, created_by, created_at, executed_at) " +
-                "VALUES ('run_digest', @status, @createdBy, NOW(), NOW())",
-                new { status, createdBy = $"discord:{cmd.User.Id}" });
+                "UPDATE bot_commands SET status = @status, executed_at = NOW() WHERE id = @cmdId",
+                new { status, cmdId });
         }
     }
 
