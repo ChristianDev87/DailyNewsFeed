@@ -1,0 +1,23 @@
+#!/bin/bash
+# Deploy-Script für den Python-Watchdog (systemd-Service)
+#
+# Voraussetzungen auf dem Host:
+#   - git
+#   - python3 + venv (bereits eingerichtet unter watchdog/venv — siehe README Schritt 6)
+#   - systemd mit dem Service daily-news-watchdog (siehe README Schritt 6)
+#
+# Einrichten:
+#   cp deploy-watchdog.sh.example deploy-watchdog.sh
+#   chmod +x deploy-watchdog.sh
+#
+set -e
+PROJ=/opt/daily-news
+cd "$PROJ"
+
+echo "=== Watchdog deployen ==="
+git pull origin main
+cd watchdog
+venv/bin/pip install -r requirements.txt --quiet --upgrade
+systemctl restart daily-news-watchdog
+systemctl status daily-news-watchdog --no-pager
+echo "=== Watchdog: Fertig ==="

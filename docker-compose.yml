@@ -1,0 +1,61 @@
+services:
+  bot:
+    build:
+      context: ./discordbot
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false   # ignoriert wenn db-Profil nicht aktiv (Option A)
+    ports:
+      - "127.0.0.1:8082:8080"
+    volumes:
+      - /var/log/dailynews/bot:/app/logs
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false   # ignoriert wenn db-Profil nicht aktiv (Option A)
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - /var/log/dailynews/frontend:/var/log/nginx
+      - /var/log/dailynews:/var/log/dailynews:ro
+
+  # Option B — MariaDB im Docker
+  # Starten mit: docker compose --profile with-db up -d
+  db:
+    image: mariadb:10.11
+    profiles: ["with-db"]
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASS}
+    ports:
+      - "127.0.0.1:3307:3306"  # 3307 auf dem Host → kein Konflikt mit vorhandenem MySQL/MariaDB
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  db_data:
