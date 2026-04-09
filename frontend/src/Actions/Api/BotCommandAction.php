@@ -33,8 +33,11 @@ class BotCommandAction
             [$command, 'pending', $session['discord_user_id']]
         );
 
+        $cmdId = (int)$this->db->lastInsertId();
+
         return $this->json($response, [
             'success' => true,
+            'cmdId'   => $cmdId,
             'message' => match ($command) {
                 'restart_bot'     => 'Neustart-Befehl gesendet.',
                 'run_digest'      => 'Digest wird ausgeführt.',

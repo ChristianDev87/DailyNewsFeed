@@ -46,8 +46,8 @@ $fmtBerlin = static fn (?string $ts): string => $ts
 <div class="bot-panel" style="margin-top:24px">
     <h2>Deployment</h2>
     <div class="actions">
-        <button class="btn btn-primary" onclick="botCmd('deploy_bot', 'deploy-msg')">🚀 Bot deployen</button>
-        <button class="btn btn-primary" onclick="botCmd('deploy_frontend', 'deploy-msg')">🚀 Frontend deployen</button>
+        <button class="btn btn-primary deploy-btn" data-cmd="deploy_bot"      onclick="deployCmd('deploy_bot')">🚀 Bot deployen</button>
+        <button class="btn btn-primary deploy-btn" data-cmd="deploy_frontend" onclick="deployCmd('deploy_frontend')">🚀 Frontend deployen</button>
     </div>
     <p style="font-size:13px;color:var(--muted);margin-top:8px">
         Führt git pull + docker build + docker up auf dem Server aus (~1–2 Min). Watchdog-Redeploy: SSH nötig.
@@ -258,7 +258,92 @@ async function botCmd(command, msgId = 'bot-msg') {
     });
     const data = await res.json();
     msgEl.textContent = data.message ?? (data.success ? 'Befehl gesendet.' : `Fehler: ${data.error}`);
-    const noreload = ['deploy_bot', 'deploy_frontend'];
-    if (res.ok && !noreload.includes(command)) setTimeout(() => location.reload(), 2000);
+    if (res.ok) setTimeout(() => location.reload(), 2000);
+}
+
+async function deployCmd(command) {
+    const deployBtns = document.querySelectorAll('.deploy-btn');
+    const clickedBtn = document.querySelector(`.deploy-btn[data-cmd="${command}"]`);
+    const msgEl      = document.getElementById('deploy-msg');
+    const origText   = clickedBtn.textContent;
+
+    deployBtns.forEach(b => { b.disabled = true; });
+    clickedBtn.textContent = '⏳ läuft…';
+    msgEl.textContent = '';
+
+    // Send the command
+    let data;
+    try {
+        const res = await fetch('/api/bot/command', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>' },
+            body:    JSON.stringify({ command }),
+        });
+        data = await res.json();
+        if (!res.ok || !data.success) {
+            msgEl.textContent = `❌ ${data.error ?? 'Befehl fehlgeschlagen'}`;
+            deployBtns.forEach(b => { b.disabled = false; });
+            clickedBtn.textContent = origText;
+            return;
+        }
+    } catch (e) {
+        msgEl.textContent = `❌ Netzwerkfehler: ${e.message}`;
+        deployBtns.forEach(b => { b.disabled = false; });
+        clickedBtn.textContent = origText;
+        return;
+    }
+
+    const cmdId = data.cmdId;
+    if (!cmdId) {
+        msgEl.textContent = '❌ Kein Command-ID erhalten. Prüfe die Logs.';
+        deployBtns.forEach(b => { b.disabled = false; });
+        clickedBtn.textContent = origText;
+        return;
+    }
+    const started  = Date.now();
+    const maxMs    = 10 * 60 * 1000; // 10 minutes
+    let consecutive = 0;
+    let tickerInterval, pollInterval, timeoutHandle;
+
+    tickerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - started) / 1000);
+        const mins    = Math.floor(elapsed / 60);
+        const secs    = String(elapsed % 60).padStart(2, '0');
+        msgEl.textContent = `⏳ Deploy läuft… ${mins}:${secs} min`;
+    }, 1000);
+
+    function finish(msg) {
+        clearInterval(tickerInterval);
+        clearInterval(pollInterval);
+        clearTimeout(timeoutHandle);
+        deployBtns.forEach(b => { b.disabled = false; });
+        clickedBtn.textContent = origText;
+        msgEl.textContent = msg;
+    }
+
+    timeoutHandle = setTimeout(() => finish('⚠️ Deploy dauert ungewöhnlich lange. Prüfe die Logs.'), maxMs);
+
+    pollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/api/bot/command/${cmdId}/status`);
+            if (!res.ok) {
+                consecutive++;
+                if (consecutive >= 10) finish('⚠️ Server nicht erreichbar. Prüfe die Logs.');
+                return;
+            }
+            const d = await res.json();
+            consecutive = 0;
+            if (d.status === 'done') {
+                finish('✅ Deploy abgeschlossen. Seite wird neu geladen…');
+                setTimeout(() => location.reload(), 1500);
+            } else if (d.status === 'failed') {
+                finish('❌ Deploy fehlgeschlagen. Prüfe die Logs.');
+            }
+            // 'pending' and 'in_progress' → keep polling
+        } catch (_) {
+            consecutive++;
+            if (consecutive >= 10) finish('⚠️ Server nicht erreichbar. Prüfe die Logs.');
+        }
+    }, 3000);
 }
 </script>
