@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Actions\Auth\CallbackAction;
 use App\Actions\Api\AdminLogsAction;
 use App\Actions\Api\BotCommandAction;
+use App\Actions\Api\BotCommandStatusAction;
 use App\Actions\Api\CategoryDeleteAction;
 use App\Actions\Api\CategoryOrderAction;
 use App\Actions\Api\CategorySaveAction;
@@ -78,6 +79,7 @@ $app->group('', function (\Slim\Routing\RouteCollectorProxy $group) {
     $group->put('/api/category/{id}', CategoryUpdateAction::class);
     $group->delete('/api/category/{id}', CategoryDeleteAction::class);
     $group->post('/api/bot/command', BotCommandAction::class);
+    $group->get('/api/bot/command/{id}/status', BotCommandStatusAction::class);
     $group->get('/api/admin/logs', AdminLogsAction::class);
     $group->get('/api/guilds', GuildListAction::class);
     $group->get('/api/guilds/{guild_id}/channels', GuildChannelsAction::class);
