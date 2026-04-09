@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use App\Actions\Auth\CallbackAction;
+use App\Actions\Api\AdminCommandsAction;
 use App\Actions\Api\AdminLogsAction;
 use App\Actions\Api\BotCommandAction;
 use App\Actions\Api\BotCommandStatusAction;
@@ -81,6 +82,7 @@ $app->group('', function (\Slim\Routing\RouteCollectorProxy $group) {
     $group->post('/api/bot/command', BotCommandAction::class);
     $group->get('/api/bot/command/{id}/status', BotCommandStatusAction::class);
     $group->get('/api/admin/logs', AdminLogsAction::class);
+    $group->get('/api/admin/commands', AdminCommandsAction::class);
     $group->get('/api/guilds', GuildListAction::class);
     $group->get('/api/guilds/{guild_id}/channels', GuildChannelsAction::class);
     $group->post('/api/channel/register', ChannelRegisterAction::class);
