@@ -10,7 +10,7 @@ use Slim\Psr7\Response;
 
 class BotCommandAction
 {
-    private const ALLOWED = ['restart_bot', 'run_digest', 'stop_bot', 'deploy_bot', 'deploy_frontend'];
+    private const ALLOWED = ['restart_bot', 'start_bot', 'run_digest', 'stop_bot', 'deploy_bot', 'deploy_frontend'];
 
     public function __construct(private Database $db) {}
 
