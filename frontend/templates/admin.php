@@ -24,7 +24,7 @@ $fmtBerlin = static fn (?string $ts): string => $ts
         <div class="stat-label">Aktive Server</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value"><?= (int)($stats['articles_today'] ?? 0) ?></div>
+        <div class="stat-value" id="stat-articles"><?= (int)($stats['articles_today'] ?? 0) ?></div>
         <div class="stat-label">Artikel heute</div>
     </div>
     <div class="stat-card">
@@ -255,6 +255,8 @@ function refreshAdminData() {
             if (!d) return;
             const statEl = document.getElementById('stat-pending');
             if (statEl) statEl.textContent = d.pending_count;
+            const artEl = document.getElementById('stat-articles');
+            if (artEl && d.articles_today !== undefined) artEl.textContent = d.articles_today;
             const tbody = document.getElementById('cmd-tbody');
             if (!tbody) return;
             const statusMap = { done: '✅ done', pending: '⏳ pending', in_progress: '🔄 in_progress', failed: '❌ failed' };
