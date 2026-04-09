@@ -20,6 +20,8 @@ public class DigestService
     private static readonly TimeZoneInfo _tz =
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
+    private static readonly TimeSpan InterChunkDelay = TimeSpan.FromSeconds(2);
+
     private static DateTime NowBerlin() =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _tz);
 
@@ -33,7 +35,7 @@ public class DigestService
         _db = db;
         _feedFetcher = feedFetcher;
         _logger = logger;
-        _maxParallelFeeds = int.TryParse(config["MAX_PARALLEL_FEEDS"], out var n) ? n : 10;
+        _maxParallelFeeds = int.TryParse(config["MAX_PARALLEL_FEEDS"], out var n) ? Math.Max(1, n) : 10;
         var catSec  = int.TryParse(config["CATEGORY_SEND_DELAY_SECONDS"], out var c)  ? c  : 2;
         _categoryDelay = TimeSpan.FromSeconds(Math.Max(2, catSec));
         var chanSec = int.TryParse(config["CHANNEL_SEND_DELAY_SECONDS"],  out var ch) ? ch : 5;
@@ -169,7 +171,7 @@ public class DigestService
             {
                 await SendWithRateLimitAsync(threadChannel, chunks[j], ct);
                 if (j < chunks.Count - 1)
-                    await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                    await Task.Delay(InterChunkDelay, ct);
             }
 
             await BulkInsertSeenArticlesAsync(catArticles, channelId);
