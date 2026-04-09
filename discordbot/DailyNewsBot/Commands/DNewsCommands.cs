@@ -13,7 +13,7 @@ public static class DNewsCommands
     public static async Task HandleAsync(
         SocketSlashCommand cmd,
         IBotClientProvider clientProvider,
-        Database db,
+        IDatabase db,
         DigestService digestService,
         string dashboardUrl)
     {
@@ -35,7 +35,7 @@ public static class DNewsCommands
 
     // /dnews setup
     private static async Task HandleSetupAsync(
-        SocketSlashCommand cmd, Database db, string dashboardUrl)
+        SocketSlashCommand cmd, IDatabase db, string dashboardUrl)
     {
         if (!IsAdmin(cmd))
         {
@@ -84,7 +84,7 @@ public static class DNewsCommands
     private static async Task HandleSendenAsync(
         SocketSlashCommand cmd,
         IBotClientProvider clientProvider,
-        Database db,
+        IDatabase db,
         DigestService digestService,
         string dashboardUrl)
     {
@@ -149,7 +149,7 @@ public static class DNewsCommands
     }
 
     // /dnews status
-    private static async Task HandleStatusAsync(SocketSlashCommand cmd, Database db)
+    private static async Task HandleStatusAsync(SocketSlashCommand cmd, IDatabase db)
     {
         var channelId = cmd.Channel.Id.ToString();
 
@@ -184,7 +184,7 @@ public static class DNewsCommands
     }
 
     // /dnews feeds
-    private static async Task HandleFeedsAsync(SocketSlashCommand cmd, Database db, string dashboardUrl)
+    private static async Task HandleFeedsAsync(SocketSlashCommand cmd, IDatabase db, string dashboardUrl)
     {
         if (!IsAdmin(cmd))
         {
@@ -222,7 +222,7 @@ public static class DNewsCommands
     }
 
     // /dnews pause
-    private static async Task HandlePauseAsync(SocketSlashCommand cmd, Database db)
+    private static async Task HandlePauseAsync(SocketSlashCommand cmd, IDatabase db)
     {
         if (!IsAdmin(cmd))
         {
@@ -241,7 +241,7 @@ public static class DNewsCommands
     }
 
     // /dnews fortsetzen
-    private static async Task HandleFortsetzenAsync(SocketSlashCommand cmd, Database db)
+    private static async Task HandleFortsetzenAsync(SocketSlashCommand cmd, IDatabase db)
     {
         if (!IsAdmin(cmd))
         {
